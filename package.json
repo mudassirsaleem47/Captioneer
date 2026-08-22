@@ -3,12 +3,20 @@
   "version": "1.0.0",
   "private": true,
   "description": "AI Video Auto-Captioning & Subtitle Burn-in Studio",
+  "workspaces": [
+    "client",
+    "server"
+  ],
   "scripts": {
-    "dev:server": "npm run dev --prefix server",
-    "dev:client": "npm run dev --prefix client",
-    "dev": "npm run dev:server & npm run dev:client",
-    "build:client": "npm run build --prefix client",
-    "start:server": "npm start --prefix server",
-    "test:server": "npm test --prefix server"
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm run dev --workspace=server\" \"npm run dev --workspace=client\"",
+    "dev:server": "npm run dev --workspace=server",
+    "dev:client": "npm run dev --workspace=client",
+    "start": "concurrently -n \"SERVER,CLIENT\" -c \"bgBlue.bold,bgMagenta.bold\" \"npm start --workspace=server\" \"npm run preview --workspace=client\"",
+    "start:server": "npm start --workspace=server",
+    "test:server": "npm test --workspace=server",
+    "test": "npm test --workspace=server"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
   }
 }

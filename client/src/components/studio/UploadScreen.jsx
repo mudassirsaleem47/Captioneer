@@ -153,7 +153,7 @@ export function UploadScreen({ onUploadSuccess, onLoadDemo }) {
             Upload Video to Add Captions
           </h1>
           <p className="text-xs sm:text-sm text-neutral-400 mt-2 max-w-lg mx-auto">
-            Drop your video file to auto-generate animated, styled captions with Groq Whisper Large v3.
+            Drop your video file to auto-generate animated, styled captions.
           </p>
         </div>
 
@@ -292,7 +292,6 @@ export function UploadScreen({ onUploadSuccess, onLoadDemo }) {
       <footer className="max-w-4xl w-full mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 text-center text-neutral-400 text-xs py-2">
         <div className="flex flex-col items-center gap-1.5 p-2 rounded-xl bg-white/[0.02]">
           <Zap size={16} className="text-yellow-400" />
-          <span className="font-semibold text-white">Groq Whisper v3</span>
           <span className="text-[10px] text-neutral-500">Fast speech-to-text</span>
         </div>
 

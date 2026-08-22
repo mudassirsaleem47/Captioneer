@@ -13,7 +13,7 @@ export const UI_CONTENT = {
   brand: {
     name: 'Captioneer',
     tagline: 'AI Video Caption Studio',
-    badge: 'Groq Whisper v3',
+    badge: '',
     version: 'v1.0.0',
   },
 
@@ -232,19 +232,19 @@ export const UI_CONTENT = {
 
   // 6. Upload & Transcribe Modal
   uploadModal: {
-    title: 'Upload & Transcribe Video',
-    description: 'Upload your video to extract speech and generate word-level captions with Groq Whisper.',
-    dropzoneTitle: 'Drag & drop your video file here',
-    dropzoneSubtitle: 'or click to browse from your computer',
-    supportedFormatsHint: 'Supports MP4, MOV, WEBM, MKV, AVI (up to 500MB)',
+    title: 'Upload Video',
+    description: '',
+    dropzoneTitle: 'Drag video here',
+    dropzoneSubtitle: '',
+    supportedFormatsHint: '(Max upload 500MB)',
     languageLabel: 'Spoken Language',
     promptLabel: 'Context Prompt (Optional)',
     promptPlaceholder: 'Custom names, acronyms, or specific terminology...',
     cancelButton: 'Cancel',
     submitButton: 'Transcribe Video',
-    uploadingMessage: 'Uploading video and extracting audio stream...',
-    transcribingMessage: 'Transcribing speech with Groq Whisper Large v3...',
-    completeMessage: 'Transcription complete! Loading captions into studio...',
+    uploadingMessage: 'Uploading video...',
+    transcribingMessage: 'Transcribing speech...',
+    completeMessage: 'Transcription complete!',
     languages: [
       { label: 'Auto Detect Language', value: '' },
       { label: 'English', value: 'en' },
@@ -260,10 +260,10 @@ export const UI_CONTENT = {
 
   // 7. Video Export & Burn-In Modal
   exportModal: {
-    title: 'Export Video with Burned Subtitles',
-    description: 'Burns the customized captions directly onto the video frames using FFmpeg.',
+    title: 'Export Video with Subtitles',
+    description: '',
     successTitle: 'Video Ready for Download! 🎉',
-    successSubtitle: 'Subtitles have been hardcoded onto your video with hardware acceleration.',
+    successSubtitle: 'Subtitles have been hardcoded onto your video.',
     summaryTitle: 'Export Configuration Details',
     aspectRatioLabel: 'Aspect Ratio',
     durationLabel: 'Duration',

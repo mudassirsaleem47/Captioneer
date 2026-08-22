@@ -1,9 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { Header } from './components/Header';
 import { CaptionInspector } from './components/studio/CaptionInspector';
 import { Timeline } from './components/studio/Timeline';
 import { VideoPlayer } from './components/studio/VideoPlayer';
 import { PropertiesPanel } from './components/studio/PropertiesPanel';
+import { UploadModal } from './components/studio/UploadModal';
+import { ExportModal } from './components/studio/ExportModal';
 
 const INITIAL_SUBTITLES = [
   {
@@ -92,9 +94,159 @@ export default function App() {
   const [subtitles, setSubtitles] = useState(INITIAL_SUBTITLES);
   const [activeSubtitleId, setActiveSubtitleId] = useState(null);
   const [currentTime, setCurrentTime] = useState(1.85);
+  const [duration, setDuration] = useState(12);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [videoSrc, setVideoSrc] = useState(null);
   const [aspectRatio, setAspectRatio] = useState('9:16'); // '9:16' | '16:9' | '1:1'
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
+
+  // Modals state
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+  const handleTogglePlay = useCallback(() => {
+    setIsPlaying((prev) => !prev);
+  }, []);
+
+  const handleSeek = useCallback((t) => {
+    setCurrentTime(t);
+  }, []);
+
+  const handleSelectSubtitle = useCallback((id) => {
+    setActiveSubtitleId(id);
+  }, []);
+
+  const handleToggleTimelineExpanded = useCallback(() => {
+    setIsTimelineExpanded((prev) => !prev);
+  }, []);
+
+  const handleOpenUploadModal = useCallback(() => {
+    setIsUploadModalOpen(true);
+  }, []);
+
+  const handleCloseUploadModal = useCallback(() => {
+    setIsUploadModalOpen(false);
+  }, []);
+
+  const handleOpenExportModal = useCallback(() => {
+    setIsExportModalOpen(true);
+  }, []);
+
+  const handleCloseExportModal = useCallback(() => {
+    setIsExportModalOpen(false);
+  }, []);
+
+  // Global Spacebar Keydown/Keyup Listener for Play/Pause (Prevents buttons from triggering)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.code !== 'Space' && e.key !== ' ') return;
+
+      const activeEl = document.activeElement;
+      const tag = activeEl?.tagName?.toLowerCase();
+      const isEditable = activeEl?.isContentEditable;
+      const isTextInput =
+        tag === 'textarea' ||
+        isEditable ||
+        (tag === 'input' &&
+          !['button', 'submit', 'reset', 'checkbox', 'radio', 'range'].includes(
+            activeEl?.type?.toLowerCase()
+          ));
+
+      // Only allow space typing if user is in an actual text field
+      if (isTextInput) {
+        return;
+      }
+
+      // Stop ALL other listeners and React Aria from activating focused buttons
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      if (activeEl && typeof activeEl.blur === 'function') {
+        activeEl.blur();
+      }
+
+      handleTogglePlay();
+    };
+
+    const handleKeyUp = (e) => {
+      if (e.code !== 'Space' && e.key !== ' ') return;
+
+      const activeEl = document.activeElement;
+      const tag = activeEl?.tagName?.toLowerCase();
+      const isEditable = activeEl?.isContentEditable;
+      const isTextInput =
+        tag === 'textarea' ||
+        isEditable ||
+        (tag === 'input' &&
+          !['button', 'submit', 'reset', 'checkbox', 'radio', 'range'].includes(
+            activeEl?.type?.toLowerCase()
+          ));
+
+      if (isTextInput) {
+        return;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+    };
+
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    window.addEventListener('keyup', handleKeyUp, { capture: true });
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, { capture: true });
+      window.removeEventListener('keyup', handleKeyUp, { capture: true });
+    };
+  }, [handleTogglePlay]);
+
+  // Animation Frame Playback Loop (keeps timeline synchronized during playback)
+  useEffect(() => {
+    let animationFrameId;
+    let lastTime = performance.now();
+
+    if (isPlaying) {
+      const loop = (now) => {
+        const delta = (now - lastTime) / 1000;
+        lastTime = now;
+
+        setCurrentTime((prevTime) => {
+          const next = prevTime + delta;
+          if (next >= duration) {
+            setIsPlaying(false);
+            return 0;
+          }
+          return next;
+        });
+
+        animationFrameId = requestAnimationFrame(loop);
+      };
+      animationFrameId = requestAnimationFrame(loop);
+    }
+
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    };
+  }, [isPlaying, duration]);
+
+  // Video Upload & Auto-Transcription Success Handler from UploadModal
+  const handleUploadSuccess = useCallback((result) => {
+    if (result.videoUrl) {
+      setVideoSrc(result.videoUrl);
+    }
+    if (result.metadata?.originalName) {
+      setProjectName(result.metadata.originalName.replace(/\.[^/.]+$/, ''));
+    }
+    if (result.metadata?.duration) {
+      setDuration(result.metadata.duration);
+    }
+    if (result.subtitles && result.subtitles.length > 0) {
+      setSubtitles(result.subtitles);
+    }
+    setCurrentTime(0);
+    setIsPlaying(false);
+  }, []);
 
   const handleUpdateSubtitle = useCallback((id, updates) => {
     setSubtitles((prev) =>
@@ -161,6 +313,11 @@ export default function App() {
   }, []);
 
   const isReelsLayout = aspectRatio === '9:16';
+  const exportStyle = useMemo(() => ({}), []);
+  const exportMetadata = useMemo(
+    () => ({ duration, originalName: projectName }),
+    [duration, projectName]
+  );
 
   return (
     <div className="h-screen w-screen bg-[#09090B] text-white flex flex-col font-sans select-none overflow-hidden justify-between">
@@ -169,8 +326,8 @@ export default function App() {
         projectName={projectName}
         onProjectNameChange={setProjectName}
         onHome={() => console.log('Home clicked')}
-        onImport={() => console.log('Import clicked')}
-        onExport={() => console.log('Export clicked')}
+        onImport={handleOpenUploadModal}
+        onExport={handleOpenExportModal}
       />
 
       {/* 2. Main Studio Workspace Layout */}
@@ -184,7 +341,7 @@ export default function App() {
               <CaptionInspector
                 subtitles={subtitles}
                 activeSubtitleId={activeSubtitleId}
-                onSelectSubtitle={setActiveSubtitleId}
+                onSelectSubtitle={handleSelectSubtitle}
                 onAddSubtitle={handleAddSubtitle}
                 onUpdateSubtitle={handleUpdateSubtitle}
                 onDeleteSubtitle={handleDeleteSubtitle}
@@ -198,18 +355,18 @@ export default function App() {
               <Timeline
                 isPlaying={isPlaying}
                 currentTime={currentTime}
-                duration={12}
+                duration={duration}
                 subtitles={subtitles}
                 activeSubtitleId={activeSubtitleId}
-                onTogglePlay={() => setIsPlaying((p) => !p)}
-                onSeek={setCurrentTime}
-                onSelectSubtitle={setActiveSubtitleId}
+                onTogglePlay={handleTogglePlay}
+                onSeek={handleSeek}
+                onSelectSubtitle={handleSelectSubtitle}
                 onUpdateSubtitle={handleUpdateSubtitle}
                 onAddSubtitle={handleAddSubtitle}
                 onSplitSubtitle={handleSplitSubtitle}
                 onDeleteSubtitle={handleDeleteSubtitle}
                 isExpanded={isTimelineExpanded}
-                onToggleExpand={() => setIsTimelineExpanded((p) => !p)}
+                onToggleExpand={handleToggleTimelineExpanded}
               />
             </div>
           </div>
@@ -219,13 +376,17 @@ export default function App() {
             <VideoPlayer
               isPlaying={isPlaying}
               currentTime={currentTime}
-              duration={12}
+              duration={duration}
               subtitles={subtitles}
               activeSubtitleId={activeSubtitleId}
               aspectRatio={aspectRatio}
               onAspectRatioChange={setAspectRatio}
-              onTogglePlay={() => setIsPlaying((p) => !p)}
-              onSeek={setCurrentTime}
+              onTogglePlay={handleTogglePlay}
+              onSeek={handleSeek}
+              onTimeUpdate={handleSeek}
+              onDurationChange={setDuration}
+              videoSrc={videoSrc}
+              onUploadVideo={handleOpenUploadModal}
             />
           </div>
 
@@ -243,7 +404,7 @@ export default function App() {
                 <CaptionInspector
                   subtitles={subtitles}
                   activeSubtitleId={activeSubtitleId}
-                  onSelectSubtitle={setActiveSubtitleId}
+                  onSelectSubtitle={handleSelectSubtitle}
                   onAddSubtitle={handleAddSubtitle}
                   onUpdateSubtitle={handleUpdateSubtitle}
                   onDeleteSubtitle={handleDeleteSubtitle}
@@ -256,13 +417,17 @@ export default function App() {
                 <VideoPlayer
                   isPlaying={isPlaying}
                   currentTime={currentTime}
-                  duration={12}
+                  duration={duration}
                   subtitles={subtitles}
                   activeSubtitleId={activeSubtitleId}
                   aspectRatio={aspectRatio}
                   onAspectRatioChange={setAspectRatio}
-                  onTogglePlay={() => setIsPlaying((p) => !p)}
-                  onSeek={setCurrentTime}
+                  onTogglePlay={handleTogglePlay}
+                  onSeek={handleSeek}
+                  onTimeUpdate={handleSeek}
+                  onDurationChange={setDuration}
+                  videoSrc={videoSrc}
+                  onUploadVideo={handleOpenUploadModal}
                 />
               </div>
             </div>
@@ -272,18 +437,18 @@ export default function App() {
               <Timeline
                 isPlaying={isPlaying}
                 currentTime={currentTime}
-                duration={12}
+                duration={duration}
                 subtitles={subtitles}
                 activeSubtitleId={activeSubtitleId}
-                onTogglePlay={() => setIsPlaying((p) => !p)}
-                onSeek={setCurrentTime}
-                onSelectSubtitle={setActiveSubtitleId}
+                onTogglePlay={handleTogglePlay}
+                onSeek={handleSeek}
+                onSelectSubtitle={handleSelectSubtitle}
                 onUpdateSubtitle={handleUpdateSubtitle}
                 onAddSubtitle={handleAddSubtitle}
                 onSplitSubtitle={handleSplitSubtitle}
                 onDeleteSubtitle={handleDeleteSubtitle}
                 isExpanded={isTimelineExpanded}
-                onToggleExpand={() => setIsTimelineExpanded((p) => !p)}
+                onToggleExpand={handleToggleTimelineExpanded}
               />
             </div>
           </div>
@@ -292,6 +457,22 @@ export default function App() {
           <PropertiesPanel />
         </main>
       )}
+
+      {/* 3. Studio Modals (Upload / Transcribe & Export) */}
+      <UploadModal
+        isOpen={isUploadModalOpen}
+        onClose={handleCloseUploadModal}
+        onUploadSuccess={handleUploadSuccess}
+      />
+
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={handleCloseExportModal}
+        videoMetadata={exportMetadata}
+        subtitles={subtitles}
+        style={exportStyle}
+        aspectRatio={aspectRatio}
+      />
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { Home, Pencil, Check, Upload, Download } from 'lucide-react';
 import { Button } from './ui/Button';
 import { TextField } from './ui/TextField';
 
-export function Header({
+export const Header = React.memo(function Header({
   projectName = 'Untitled Project',
   onProjectNameChange,
   onHome,
@@ -40,14 +40,6 @@ export function Header({
     <header className="h-14 w-full bg-[#09090B] px-4 flex items-center justify-between select-none">
       {/* Left: Home Icon + Viewpoint Sliding Track */}
       <div className="flex items-center gap-3">
-        {/* Home Button */}
-        <Button
-          variant="quiet"
-          onPress={onHome}
-          aria-label="Home"
-        >
-          <Home size={16} />
-        </Button>
 
         <div className="h-4 w-px bg-[#27272A]" />
 
@@ -119,7 +111,7 @@ export function Header({
           onPress={onImport}
           className="gap-1.5"
         >
-          <Upload size={14} />
+          <Download size={14} />
           <span>Import</span>
         </Button>
 
@@ -128,12 +120,12 @@ export function Header({
           onPress={onExport}
           className="gap-1.5"
         >
-          <Download size={14} />
+          <Upload size={14} />
           <span>Export</span>
         </Button>
       </div>
     </header>
   );
-}
+});
 
 export default Header;

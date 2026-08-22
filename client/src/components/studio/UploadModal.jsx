@@ -1,6 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { Upload, FileVideo, Sparkles, AlertCircle, X } from 'lucide-react';
+import { Modal } from '../ui/Modal';
+import { Dialog } from '../ui/Dialog';
 import { Button } from '../ui/Button';
+import { ProgressBar } from '../ui/ProgressBar';
 import { Select, SelectItem } from '../ui/Select';
 import { TextField } from '../ui/TextField';
 import { uploadAndTranscribe } from '../../api';
@@ -16,8 +19,6 @@ export const UploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
 
   const content = UI_CONTENT.uploadModal;
   const fileInputRef = useRef(null);
-
-  if (!isOpen) return null;
 
   const handleFileChange = (e) => {
     if (e.target.files && e.target.files[0]) {
@@ -86,28 +87,26 @@ export const UploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      {/* Backdrop */}
-      <div
-        onClick={() => !loading && onClose()}
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
-      />
-
-      {/* Modal Dialog Card */}
-      <div className="relative w-full max-w-[480px] bg-surface border border-border/80 rounded-2xl p-6 shadow-premium flex flex-col gap-4 z-10 animate-in fade-in duration-200">
+    <Modal
+      isOpen={isOpen}
+      onOpenChange={(open) => !open && !loading && onClose()}
+      isDismissable={!loading}
+    >
+      <Dialog className="p-6 bg-[#18181B] text-white rounded-2xl border border-[#27272A] shadow-2xl flex flex-col gap-4 w-full outline-none select-none">
         {/* Header */}
         <div className="flex items-start justify-between">
           <div className="text-left">
-            <h3 className="text-base font-bold text-text-primary leading-tight">{content.title}</h3>
-            <p className="text-xs text-text-secondary mt-1">{content.description}</p>
+            <h3 className="text-base font-bold text-white leading-tight">{content.title}</h3>
+            <p className="text-xs text-[#A1A1AA] mt-1">{content.description}</p>
           </div>
-          <button
-            type="button"
-            onClick={() => !loading && onClose()}
-            className="rounded-lg p-1 text-text-secondary hover:bg-surface-hover hover:text-text-primary transition-colors cursor-pointer"
+          <Button
+            variant="quiet"
+            onPress={() => !loading && onClose()}
+            aria-label="Close modal"
+            className="w-7 h-7 p-0 text-[#A1A1AA] hover:text-white"
           >
             <X size={16} />
-          </button>
+          </Button>
         </div>
 
         {/* Dropzone */}
@@ -115,7 +114,7 @@ export const UploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className="border-2 border-dashed border-border hover:border-primary/60 bg-main/50 hover:bg-main rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors text-center group"
+          className="border-2 border-dashed border-[#3F3F46] hover:border-indigo-500/80 bg-[#242428]/60 hover:bg-[#242428] rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors text-center group"
         >
           <input
             ref={fileInputRef}
@@ -127,23 +126,23 @@ export const UploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
 
           {selectedFile ? (
             <div className="flex flex-col items-center space-y-1.5">
-              <div className="w-10 h-10 rounded-lg bg-surface-hover flex items-center justify-center text-text-primary">
+              <div className="w-10 h-10 rounded-lg bg-indigo-600/20 text-indigo-400 flex items-center justify-center">
                 <FileVideo size={20} />
               </div>
-              <span className="text-sm font-semibold text-text-primary">{selectedFile.name}</span>
-              <span className="text-xs font-mono text-text-secondary">
+              <span className="text-sm font-semibold text-white">{selectedFile.name}</span>
+              <span className="text-xs font-mono text-[#A1A1AA]">
                 {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
               </span>
             </div>
           ) : (
             <div className="flex flex-col items-center space-y-1.5">
-              <div className="w-10 h-10 rounded-lg bg-surface-hover flex items-center justify-center text-text-secondary group-hover:text-primary transition-colors">
+              <div className="w-10 h-10 rounded-lg bg-[#242428] flex items-center justify-center text-[#A1A1AA] group-hover:text-indigo-400 transition-colors">
                 <Upload size={20} />
               </div>
-              <p className="text-sm font-semibold text-text-primary">
+              <p className="text-sm font-semibold text-white">
                 {content.dropzoneTitle}
               </p>
-              <p className="text-xs text-text-secondary">
+              <p className="text-xs text-[#A1A1AA]">
                 {content.dropzoneSubtitle} • {content.supportedFormatsHint}
               </p>
             </div>
@@ -174,43 +173,47 @@ export const UploadModal = ({ isOpen, onClose, onUploadSuccess }) => {
           />
         </div>
 
-        {/* Loading message */}
+        {/* Loading message with UI ProgressBar */}
         {loading && (
-          <div className="p-3 bg-main border border-border rounded-[8px] flex items-center gap-2 text-xs text-text-primary animate-pulse">
-            <Sparkles size={14} className="animate-spin text-primary shrink-0" />
-            <span className="font-medium">{statusMessage}</span>
+          <div className="p-3.5 bg-[#242428] border border-[#3F3F46] rounded-xl flex flex-col gap-2">
+            <ProgressBar
+              isIndeterminate
+              label={statusMessage}
+              className="w-full max-w-none text-xs font-semibold text-white"
+            />
           </div>
         )}
 
         {/* Error message */}
         {error && (
-          <div className="p-3 bg-danger/10 border border-danger/20 rounded-[8px] flex items-center gap-2 text-xs text-danger">
+          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center gap-2 text-xs text-red-400">
             <AlertCircle size={14} className="shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
+        <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#27272A]">
           <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            disabled={loading}
+            variant="quiet"
+            onPress={onClose}
+            isDisabled={loading}
           >
             {content.cancelButton}
           </Button>
           <Button
             variant="primary"
-            size="sm"
-            onClick={handleSubmit}
-            disabled={loading || !selectedFile}
+            onPress={handleSubmit}
+            isDisabled={loading || !selectedFile}
+            className="gap-1.5 shadow-md shadow-indigo-500/20"
           >
             <Sparkles size={13} />
             <span>{content.submitButton}</span>
           </Button>
         </div>
-      </div>
-    </div>
+      </Dialog>
+    </Modal>
   );
 };
+
+export default UploadModal;

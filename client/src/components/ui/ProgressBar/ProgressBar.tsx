@@ -7,15 +7,16 @@ import './ProgressBar.css';
 
 export interface ProgressBarProps extends AriaProgressBarProps {
   label?: string;
+  showValue?: boolean;
 }
 
-export function ProgressBar({label, ...props}: ProgressBarProps) {
+export function ProgressBar({label, showValue = true, ...props}: ProgressBarProps) {
   return (
     <AriaProgressBar {...props}>
       {({percentage, valueText, isIndeterminate}) => (
         <>
-          <Label>{label}</Label>
-          <span className="value">{valueText}</span>
+          {label && <Label>{label}</Label>}
+          {label && showValue && <span className="value">{valueText}</span>}
           <div className="track inset">
             <div
               className="fill"

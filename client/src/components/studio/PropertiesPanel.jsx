@@ -1,7 +1,7 @@
 import React from 'react';
 import { SlidersHorizontal } from 'lucide-react';
 
-export function PropertiesPanel() {
+export const PropertiesPanel = React.memo(function PropertiesPanel() {
   return (
     <div className="w-80 2xl:w-96 h-full min-h-0 bg-[#18181B] p-1.5 text-white select-none overflow-hidden rounded-2xl border border-[#27272A]/80 shadow-2xl flex flex-col shrink-0">
       {/* Header */}
@@ -23,6 +23,4 @@ export function PropertiesPanel() {
       </div>
     </div>
   );
-}
-
-export default PropertiesPanel;
+});
