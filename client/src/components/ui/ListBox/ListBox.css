@@ -1,0 +1,44 @@
+@import '../theme.css';
+
+.react-aria-ListBox {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  outline: none;
+  overflow-y: auto;
+  max-height: 280px;
+  user-select: none;
+}
+
+.react-aria-ListBoxItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--text-color);
+  cursor: pointer;
+  outline: none;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+
+.react-aria-ListBoxItem[data-hovered],
+.react-aria-ListBoxItem[data-focused] {
+  background-color: var(--highlight-hover);
+  color: var(--text-color-hover);
+}
+
+.react-aria-ListBoxItem[data-selected] {
+  background-color: var(--highlight-background);
+  color: var(--highlight-foreground);
+  font-weight: 600;
+}
+
+.react-aria-ListBoxItem[data-disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

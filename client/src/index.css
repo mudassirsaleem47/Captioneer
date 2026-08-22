@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+:root {
+  --main-bg: #09090B;
+  --surface-bg: #141416;
+  --surface-hover: #1f1f23;
+  --text-primary: #fdfdfd;
+  --text-secondary: #9ca3af;
+  --border-color: #27272a;
+  --shadow-premium-val: 0 3px 6px rgba(0, 0, 0, 0.4);
+}
+
+:root.light {
+  --main-bg: #fafafa;
+  --surface-bg: #ffffff;
+  --surface-hover: #f4f4f5;
+  --text-primary: #27272a;
+  --text-secondary: #52525b;
+  --border-color: #e4e4e7;
+  --shadow-premium-val: 0 3px 6px rgba(0, 0, 0, 0.04);
+}
+
+@theme {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --color-primary: #0099ff;    
+  --color-primary-hover: #1188ff;
+  --color-accent: #f97316;
+  --color-muted: #94a3b8;
+  --color-success: #10b981;
+  --color-danger: #ef4444;
+  --color-main: var(--main-bg);          
+  --color-surface: var(--surface-bg);       
+  --color-surface-hover: var(--surface-hover);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-border: var(--border-color);
+  --shadow-premium: var(--shadow-premium-val);
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: var(--main-bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+/* Slim Premium Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-main); 
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface); 
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border); 
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 99px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

@@ -1,0 +1,14 @@
+{
+  "name": "captioneer-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Video Auto-Captioning & Subtitle Burn-in Studio",
+  "scripts": {
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run dev --prefix client",
+    "dev": "npm run dev:server & npm run dev:client",
+    "build:client": "npm run build --prefix client",
+    "start:server": "npm start --prefix server",
+    "test:server": "npm test --prefix server"
+  }
+}
