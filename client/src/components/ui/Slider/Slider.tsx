@@ -5,7 +5,7 @@ import {
   SliderThumb,
   SliderTrack,
   SliderFill
-} from 'react-aria-components';
+} from 'react-aria-components/Slider';
 import {Label} from '../Form';
 import './Slider.css';
 
@@ -14,6 +14,8 @@ export interface SliderProps<T> extends AriaSliderProps<T> {
   label?: string;
   /** Aria labels for each thumb. */
   thumbLabels?: string[];
+  /** Whether to show the numeric value output. */
+  showOutput?: boolean;
   /**
    * The offset from which to start the fill.
    *
@@ -25,13 +27,14 @@ export interface SliderProps<T> extends AriaSliderProps<T> {
 export function Slider<T extends number | number[]>({
   label,
   thumbLabels,
+  showOutput = true,
   fillOffset,
   ...props
 }: SliderProps<T>) {
   return (
     <AriaSlider {...props}>
       {label && <Label>{label}</Label>}
-      <SliderOutput />
+      {showOutput && <SliderOutput />}
       <SliderTrack>
         {({state, isDisabled}) => (
           <>

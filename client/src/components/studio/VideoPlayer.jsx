@@ -155,17 +155,18 @@ export const VideoPlayer = React.memo(function VideoPlayer({
     window.addEventListener('mouseup', onMouseUp);
   };
 
-  // Active cue at currentTime
-  const activeCue = useMemo(() => {
-    if (activeSubtitleId) {
-      const found = subtitles.find((s) => s.id === activeSubtitleId);
-      if (found) return found;
-    }
-    return (
-      subtitles.find((s) => currentTime >= s.start && currentTime <= s.end) ||
-      subtitles[0] ||
-      null
-    );
+  // Active cues at currentTime per track index
+  const activeCues = useMemo(() => {
+    const trackIndexes = Array.from(new Set(subtitles.map(s => s.trackIndex || 0)));
+    if (trackIndexes.length === 0) trackIndexes.push(0);
+
+    return trackIndexes.map(tIdx => {
+      let cue = subtitles.find((s) => (s.trackIndex || 0) === tIdx && currentTime >= s.start && currentTime <= s.end);
+      if (!cue && tIdx === 0 && activeSubtitleId) {
+        cue = subtitles.find(s => s.id === activeSubtitleId);
+      }
+      return cue;
+    }).filter(Boolean);
   }, [subtitles, currentTime, activeSubtitleId]);
 
   const handleSkip = (delta) => {
@@ -232,11 +233,21 @@ export const VideoPlayer = React.memo(function VideoPlayer({
           )}
 
           {/* Kinetic Active Subtitles Overlay */}
-          <SubtitleOverlay
-            activeCue={activeCue}
-            currentTime={currentTime}
-            style={style}
-          />
+          {activeCues.map((cue, idx) => {
+            const trackIndex = cue.trackIndex || 0;
+            const adjustedStyle = {
+              ...style,
+              positionY: (style.positionY || 78) - (trackIndex * 12)
+            };
+            return (
+              <SubtitleOverlay
+                key={cue.id || idx}
+                activeCue={cue}
+                currentTime={currentTime}
+                style={adjustedStyle}
+              />
+            );
+          })}
 
           {/* Hover Play/Pause Overlay Indicator (Only when video uploaded) */}
           {videoSrc && (

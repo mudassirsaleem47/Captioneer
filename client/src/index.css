@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./components/ui/theme.css";
 
 :root {
   --main-bg: #09090B;
@@ -35,6 +36,20 @@
   --color-text-secondary: var(--text-secondary);
   --color-border: var(--border-color);
   --shadow-premium: var(--shadow-premium-val);
+
+  /* Map Indigo shades to global tint colors for dynamic theme shifting */
+  --color-indigo-50: var(--tint-100);
+  --color-indigo-100: var(--tint-200);
+  --color-indigo-200: var(--tint-300);
+  --color-indigo-300: var(--tint-400);
+  --color-indigo-400: var(--tint-500);
+  --color-indigo-505: var(--tint-600); /* custom shadow override */
+  --color-indigo-500: var(--tint-600);
+  --color-indigo-600: var(--tint-700);
+  --color-indigo-700: var(--tint-800);
+  --color-indigo-800: var(--tint-900);
+  --color-indigo-900: var(--tint-1000);
+  --color-indigo-950: var(--tint-1100);
 }
 
 html, body, #root {

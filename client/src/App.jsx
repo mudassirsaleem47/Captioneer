@@ -91,13 +91,15 @@ const INITIAL_SUBTITLES = [
 ];
 
 export default function App() {
-  const [projectName, setProjectName] = useState('Untitled Project');
-  const [subtitles, setSubtitles] = useState(INITIAL_SUBTITLES);
+  const [projectName, setProjectName] = useState(
+    UI_CONTENT.initialData.videoMetadata.originalName.replace(/\.[^/.]+$/, '')
+  );
+  const [subtitles, setSubtitles] = useState(UI_CONTENT.initialData.subtitles);
   const [activeSubtitleId, setActiveSubtitleId] = useState(null);
-  const [currentTime, setCurrentTime] = useState(1.85);
-  const [duration, setDuration] = useState(12);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(UI_CONTENT.initialData.videoMetadata.duration);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [videoSrc, setVideoSrc] = useState(null);
+  const [videoSrc, setVideoSrc] = useState(UI_CONTENT.initialData.videoUrl);
   const [aspectRatio, setAspectRatio] = useState('9:16'); // '9:16' | '16:9' | '1:1'
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
 
@@ -120,6 +122,57 @@ export default function App() {
   // Modals state
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+  // Resizable layout panel states
+  const [videoWidth, setVideoWidth] = useState(480);
+  const [propertiesWidth, setPropertiesWidth] = useState(300);
+  const [inspectorHeight, setInspectorHeight] = useState(340);
+  const [inspectorWidthYt, setInspectorWidthYt] = useState(600);
+  const [timelineHeightYt, setTimelineHeightYt] = useState(240);
+
+  const startResizing = useCallback((e, direction, type) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+
+    let initialVal = 0;
+    if (type === 'reels-video') {
+      setVideoWidth((v) => { initialVal = v; return v; });
+    } else if (type === 'properties') {
+      setPropertiesWidth((p) => { initialVal = p; return p; });
+    } else if (type === 'reels-inspector-height') {
+      setInspectorHeight((i) => { initialVal = i; return i; });
+    } else if (type === 'yt-inspector-width') {
+      setInspectorWidthYt((w) => { initialVal = w; return w; });
+    } else if (type === 'yt-timeline-height') {
+      setTimelineHeightYt((h) => { initialVal = h; return h; });
+    }
+
+    const doDrag = (dragEvent) => {
+      const deltaX = dragEvent.clientX - startX;
+      const deltaY = dragEvent.clientY - startY;
+
+      if (type === 'reels-video') {
+        setVideoWidth(Math.max(340, Math.min(680, initialVal - deltaX)));
+      } else if (type === 'properties') {
+        setPropertiesWidth(Math.max(240, Math.min(480, initialVal - deltaX)));
+      } else if (type === 'reels-inspector-height') {
+        setInspectorHeight(Math.max(200, Math.min(600, initialVal + deltaY)));
+      } else if (type === 'yt-inspector-width') {
+        setInspectorWidthYt(Math.max(400, Math.min(800, initialVal + deltaX)));
+      } else if (type === 'yt-timeline-height') {
+        setTimelineHeightYt(Math.max(160, Math.min(480, initialVal - deltaY)));
+      }
+    };
+
+    const stopDrag = () => {
+      document.removeEventListener('mousemove', doDrag);
+      document.removeEventListener('mouseup', stopDrag);
+    };
+
+    document.addEventListener('mousemove', doDrag);
+    document.addEventListener('mouseup', stopDrag);
+  }, []);
 
   const handleTogglePlay = useCallback(() => {
     setIsPlaying((prev) => !prev);
@@ -272,9 +325,13 @@ export default function App() {
   }, []);
 
   const handleAddSubtitle = useCallback(() => {
+    const start = currentTime;
+    const end = Math.min(duration, start + 1.5);
     const newId = `cue-${Date.now()}`;
     const newCue = {
       id: newId,
+      start,
+      end,
       text: 'New caption line',
       words: [
         { word: 'New', isHighlighted: false },
@@ -282,8 +339,11 @@ export default function App() {
         { word: 'line', isHighlighted: false },
       ],
     };
-    setSubtitles((prev) => [...prev, newCue]);
-  }, []);
+    setSubtitles((prev) => {
+      const next = [...prev, newCue];
+      return next.sort((a, b) => (a.start || 0) - (b.start || 0));
+    });
+  }, [currentTime, duration]);
 
   const handleDeleteSubtitle = useCallback((id) => {
     setSubtitles((prev) => prev.filter((s) => s.id !== id));
@@ -294,18 +354,39 @@ export default function App() {
       const idx = prev.findIndex((s) => s.id === id);
       if (idx === -1) return prev;
       const cue = prev[idx];
-      const words = cue.words || (cue.text || '').split(' ').map((w) => ({ word: w, isHighlighted: false }));
+      const words = cue.words || (cue.text || '').split(' ').map((w) => ({ word: typeof w === 'string' ? w : w.word, isHighlighted: false }));
       if (words.length <= 1) return prev;
       const mid = Math.floor(words.length / 2);
+
+      const cueStart = cue.start !== undefined ? cue.start : 0;
+      const cueEnd = cue.end !== undefined ? cue.end : 1.5;
+      const totalDur = cueEnd - cueStart;
+      const step = totalDur / words.length;
+      const splitTime = cueStart + mid * step;
+
       const first = {
         id: cue.id,
-        text: words.slice(0, mid).map((w) => w.word).join(' '),
-        words: words.slice(0, mid),
+        start: cueStart,
+        end: splitTime,
+        text: words.slice(0, mid).map((w) => w.word || w).join(' '),
+        words: words.slice(0, mid).map((w, i) => ({
+          word: w.word || w,
+          isHighlighted: w.isHighlighted || false,
+          start: cueStart + i * step,
+          end: cueStart + (i + 1) * step,
+        })),
       };
       const second = {
         id: `cue-${Date.now()}`,
-        text: words.slice(mid).map((w) => w.word).join(' '),
-        words: words.slice(mid),
+        start: splitTime,
+        end: cueEnd,
+        text: words.slice(mid).map((w) => w.word || w).join(' '),
+        words: words.slice(mid).map((w, i) => ({
+          word: w.word || w,
+          isHighlighted: w.isHighlighted || false,
+          start: splitTime + i * step,
+          end: splitTime + (i + 1) * step,
+        })),
       };
       const next = [...prev];
       next.splice(idx, 1, first, second);
@@ -350,11 +431,11 @@ export default function App() {
       {/* 2. Main Studio Workspace Layout */}
       {isReelsLayout ? (
         /* ==================== REELS VERTICAL 9:16 LAYOUT ==================== */
-        <main className="flex-1 min-h-0 px-2 pb-2 relative overflow-hidden bg-[#09090B] flex gap-2 items-stretch">
+        <main className="flex-1 min-h-0 px-2 pb-2 relative overflow-hidden bg-[#09090B] flex items-stretch">
           {/* Left Column: [Caption Inspector (Top)] + [Timeline (Bottom)] */}
-          <div className="flex-1 min-w-0 h-full flex flex-col gap-2">
+          <div className="flex-1 min-w-0 h-full flex flex-col items-stretch">
             {/* Top: Caption Inspector */}
-            <div className="flex-1 min-h-0 h-full flex flex-col">
+            <div style={{ height: `${inspectorHeight}px` }} className="flex-none min-h-0 flex flex-col">
               <CaptionInspector
                 subtitles={subtitles}
                 activeSubtitleId={activeSubtitleId}
@@ -364,11 +445,21 @@ export default function App() {
                 onDeleteSubtitle={handleDeleteSubtitle}
                 onSplitSubtitle={handleSplitSubtitle}
                 onMergeSubtitles={handleMergeSubtitles}
+                style={subtitleStyle}
+                onStyleChange={handleStyleChange}
               />
             </div>
 
+            {/* Horizontal Resizer Bar */}
+            <div
+              onMouseDown={(e) => startResizing(e, 'row', 'reels-inspector-height')}
+              className="h-1.5 cursor-row-resize z-40 flex items-center justify-center shrink-0 self-stretch my-0.5 group"
+            >
+              <div className="h-[1.5px] w-12 bg-[#27272A] group-hover:w-[80%] group-hover:bg-indigo-500/40 transition-all duration-200" />
+            </div>
+
             {/* Bottom: Timeline */}
-            <div className="flex-1 min-h-0 h-full flex flex-col">
+            <div className="flex-1 min-h-0 flex flex-col">
               <Timeline
                 isPlaying={isPlaying}
                 currentTime={currentTime}
@@ -388,8 +479,16 @@ export default function App() {
             </div>
           </div>
 
+          {/* Vertical Resizer Bar */}
+          <div
+            onMouseDown={(e) => startResizing(e, 'col', 'reels-video')}
+            className="w-1.5 cursor-col-resize z-40 flex items-center justify-center shrink-0 self-stretch mx-0.5 group"
+          >
+            <div className="w-[1.5px] h-12 bg-[#27272A] group-hover:h-[80%] group-hover:bg-indigo-500/40 transition-all duration-200" />
+          </div>
+
           {/* Center Column: Tall Video Player */}
-          <div className="w-[460px] xl:w-[500px] 2xl:w-[540px] h-full shrink-0 flex flex-col">
+          <div style={{ width: `${videoWidth}px` }} className="shrink-0 h-full flex flex-col">
             <VideoPlayer
               isPlaying={isPlaying}
               currentTime={currentTime}
@@ -408,21 +507,31 @@ export default function App() {
             />
           </div>
 
+          {/* Vertical Resizer Bar */}
+          <div
+            onMouseDown={(e) => startResizing(e, 'col', 'properties')}
+            className="w-1.5 cursor-col-resize z-40 flex items-center justify-center shrink-0 self-stretch mx-0.5 group"
+          >
+            <div className="w-[1.5px] h-12 bg-[#27272A] group-hover:h-[80%] group-hover:bg-indigo-500/40 transition-all duration-200" />
+          </div>
+
           {/* Right Column: Properties Panel */}
-          <PropertiesPanel
-            style={subtitleStyle}
-            onStyleChange={handleStyleChange}
-            onApplyPreset={handleApplyPreset}
-          />
+          <div style={{ width: `${propertiesWidth}px` }} className="shrink-0 h-full flex flex-col">
+            <PropertiesPanel
+              style={subtitleStyle}
+              onStyleChange={handleStyleChange}
+              onApplyPreset={handleApplyPreset}
+            />
+          </div>
         </main>
       ) : (
         /* ==================== YOUTUBE / SQUARE 16:9 / 1:1 LAYOUT ==================== */
-        <main className="flex-1 min-h-0 px-2 pb-2 relative overflow-hidden bg-[#09090B] flex gap-2 items-stretch">
+        <main className="flex-1 min-h-0 px-2 pb-2 relative overflow-hidden bg-[#09090B] flex items-stretch">
           {/* Left & Center Area: [Caption Inspector + Player] on Top, [Wide Timeline] on Bottom */}
-          <div className="flex-1 min-w-0 h-full flex flex-col gap-2">
+          <div className="flex-1 min-w-0 h-full flex flex-col items-stretch">
             {/* Top Row: Caption Inspector (Left) + Player (Right) */}
-            <div className="flex-1 min-h-0 flex gap-2 items-stretch">
-              <div className="w-[600px] xl:w-[680px] h-full shrink-0 flex flex-col">
+            <div className="flex-1 min-h-0 flex items-stretch">
+              <div style={{ width: `${inspectorWidthYt}px` }} className="h-full shrink-0 flex flex-col">
                 <CaptionInspector
                   subtitles={subtitles}
                   activeSubtitleId={activeSubtitleId}
@@ -432,7 +541,17 @@ export default function App() {
                   onDeleteSubtitle={handleDeleteSubtitle}
                   onSplitSubtitle={handleSplitSubtitle}
                   onMergeSubtitles={handleMergeSubtitles}
+                  style={subtitleStyle}
+                  onStyleChange={handleStyleChange}
                 />
+              </div>
+
+              {/* Vertical Resizer */}
+              <div
+                onMouseDown={(e) => startResizing(e, 'col', 'yt-inspector-width')}
+                className="w-1.5 cursor-col-resize z-40 flex items-center justify-center shrink-0 self-stretch mx-0.5 group"
+              >
+                <div className="w-[1.5px] h-12 bg-[#27272A] group-hover:h-[80%] group-hover:bg-indigo-500/40 transition-all duration-200" />
               </div>
 
               <div className="flex-1 h-full min-h-0 flex flex-col">
@@ -455,8 +574,16 @@ export default function App() {
               </div>
             </div>
 
+            {/* Horizontal Resizer */}
+            <div
+              onMouseDown={(e) => startResizing(e, 'row', 'yt-timeline-height')}
+              className="h-1.5 cursor-row-resize z-40 flex items-center justify-center shrink-0 self-stretch my-0.5 group"
+            >
+              <div className="h-[2px] w-12 bg-[#27272A] group-hover:w-[80%] group-hover:bg-indigo-500/40 transition-all duration-200" />
+            </div>
+
             {/* Bottom Row: Wide Timeline */}
-            <div className="h-60 shrink-0 flex flex-col">
+            <div style={{ height: `${timelineHeightYt}px` }} className="shrink-0 flex flex-col">
               <Timeline
                 isPlaying={isPlaying}
                 currentTime={currentTime}
@@ -476,12 +603,22 @@ export default function App() {
             </div>
           </div>
 
+          {/* Vertical Resizer */}
+          <div
+            onMouseDown={(e) => startResizing(e, 'col', 'properties')}
+            className="w-1.5 cursor-col-resize z-40 flex items-center justify-center shrink-0 self-stretch mx-0.5 group"
+          >
+            <div className="w-[1.5px] h-12 bg-[#27272A] group-hover:h-[80%] group-hover:bg-indigo-500/40 transition-all duration-200" />
+          </div>
+
           {/* Right Column: Properties Panel */}
-          <PropertiesPanel
-            style={subtitleStyle}
-            onStyleChange={handleStyleChange}
-            onApplyPreset={handleApplyPreset}
-          />
+          <div style={{ width: `${propertiesWidth}px` }} className="shrink-0 h-full flex flex-col">
+            <PropertiesPanel
+              style={subtitleStyle}
+              onStyleChange={handleStyleChange}
+              onApplyPreset={handleApplyPreset}
+            />
+          </div>
         </main>
       )}
 

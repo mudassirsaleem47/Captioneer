@@ -131,6 +131,17 @@ export const Timeline = React.memo(function Timeline({
   const [draggedOverrides, setDraggedOverrides] = useState({});
   const [draggingBlockId, setDraggingBlockId] = useState(null);
 
+  const [captionTracks, setCaptionTracks] = useState(['Captions 1']);
+
+  const handleAddTrackClick = useCallback(() => {
+    setCaptionTracks((prev) => {
+      if (prev.length < 3) {
+        return [...prev, `Captions ${prev.length + 1}`];
+      }
+      return prev;
+    });
+  }, []);
+
   const trackContainerRef = useRef(null);
   const validDuration = Math.max(1, duration || 12);
   const zoomFactor = 1 + (zoomLevel / 100) * 2.5;
@@ -149,21 +160,83 @@ export const Timeline = React.memo(function Timeline({
     { id: 'word-7', word: 'learn', start: 3.15, end: 3.55, text: 'learn' },
   ], []);
 
+  const scrollContainerRef = useRef(null);
+
+  // Auto-scroll playhead during playback
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || !isPlaying) return;
+
+    const rect = container.getBoundingClientRect();
+    const playheadX = (currentTime / validDuration) * container.scrollWidth;
+
+    const visibleLeft = container.scrollLeft;
+    const visibleRight = visibleLeft + rect.width;
+
+    const padding = 60; // px padding
+    if (playheadX < visibleLeft + padding || playheadX > visibleRight - padding) {
+      container.scrollTo({
+        left: playheadX - rect.width / 2,
+        behavior: 'smooth',
+      });
+    }
+  }, [currentTime, isPlaying, validDuration]);
+
+  // Global Keyboard Shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const activeEl = document.activeElement;
+      const tag = activeEl?.tagName?.toLowerCase();
+      const isEditable = activeEl?.isContentEditable;
+      const isTextInput =
+        tag === 'textarea' ||
+        isEditable ||
+        (tag === 'input' &&
+          !['button', 'submit', 'reset', 'checkbox', 'radio', 'range'].includes(
+            activeEl?.type?.toLowerCase()
+          ));
+
+      if (isTextInput) return;
+
+      const key = e.key.toLowerCase();
+      if (key === 's') {
+        e.preventDefault();
+        if (activeSubtitleId) onSplitSubtitle?.(activeSubtitleId);
+      } else if (key === 'n') {
+        e.preventDefault();
+        setIsSnapActive((prev) => !prev);
+      } else if (key === 'l') {
+        e.preventDefault();
+        setIsLinkActive((prev) => !prev);
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        if (activeSubtitleId) onDeleteSubtitle?.(activeSubtitleId);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeSubtitleId, onSplitSubtitle, onDeleteSubtitle]);
+
   const wordsToRender = useMemo(() => {
     if (mode === 'WORD') {
       const allWords = [];
       subtitles.forEach((sub) => {
         if (sub.words && sub.words.length > 0) {
+          const dur = (sub.end - sub.start) / sub.words.length;
           sub.words.forEach((w, wIdx) => {
             const wordId = `${sub.id}-w-${wIdx}`;
             const override = draggedOverrides[wordId];
             allWords.push({
               id: wordId,
               word: typeof w === 'string' ? w : w.word,
-              start: override?.start !== undefined ? override.start : (w.start !== undefined ? w.start : sub.start + wIdx * 0.4),
-              end: override?.end !== undefined ? override.end : (w.end !== undefined ? w.end : sub.start + (wIdx + 1) * 0.4),
+              start: override?.start !== undefined ? override.start : (w.start !== undefined ? w.start : sub.start + wIdx * dur),
+              end: override?.end !== undefined ? override.end : (w.end !== undefined ? w.end : sub.start + (wIdx + 1) * dur),
               subId: sub.id,
               wordIndex: wIdx,
+              trackIndex: override?.trackIndex !== undefined ? override.trackIndex : (sub.trackIndex || 0),
             });
           });
         } else {
@@ -179,13 +252,25 @@ export const Timeline = React.memo(function Timeline({
               end: override?.end !== undefined ? override.end : sub.start + (wIdx + 1) * dur,
               subId: sub.id,
               wordIndex: wIdx,
+              trackIndex: override?.trackIndex !== undefined ? override.trackIndex : (sub.trackIndex || 0),
             });
           });
         }
       });
       return allWords.length > 0 ? allWords : defaultWordItems;
+    } else {
+      // LINE mode
+      const items = subtitles.length > 0 ? subtitles : defaultWordItems;
+      return items.map((sub) => {
+        const override = draggedOverrides[sub.id];
+        return {
+          ...sub,
+          start: override?.start !== undefined ? override.start : sub.start,
+          end: override?.end !== undefined ? override.end : sub.end,
+          trackIndex: override?.trackIndex !== undefined ? override.trackIndex : (sub.trackIndex || 0),
+        };
+      });
     }
-    return subtitles.length > 0 ? subtitles : defaultWordItems;
   }, [mode, subtitles, defaultWordItems, draggedOverrides]);
 
   const progressPercent = Math.min(100, Math.max(0, (currentTime / validDuration) * 100));
@@ -241,44 +326,102 @@ export const Timeline = React.memo(function Timeline({
     e.stopPropagation();
 
     setSelectedWordId(item.id);
-    if (item.subId) onSelectSubtitle?.(item.subId);
+    const targetSubId = item.subId || item.id;
+    if (targetSubId) onSelectSubtitle?.(targetSubId);
     setDraggingBlockId(item.id);
 
     const startClientX = e.clientX;
+    const startClientY = e.clientY;
     const initialStart = item.start;
     const initialEnd = item.end;
+    const initialTrackIndex = item.trackIndex || 0;
     const blockDuration = initialEnd - initialStart;
 
     const onMouseMove = (moveEvent) => {
       if (!trackContainerRef.current) return;
       const containerRect = trackContainerRef.current.getBoundingClientRect();
       const deltaX = moveEvent.clientX - startClientX;
+      const deltaY = moveEvent.clientY - startClientY;
       const deltaTime = (deltaX / containerRect.width) * validDuration;
 
       let newStart = initialStart;
       let newEnd = initialEnd;
+      let newTrackIndex = initialTrackIndex;
 
       if (action === 'move') {
+        const trackHeight = isTimelineExpanded ? 48 : 36;
+        const targetTrackChange = Math.round(deltaY / trackHeight);
+        newTrackIndex = Math.max(0, Math.min(captionTracks.length - 1, initialTrackIndex + targetTrackChange));
+
+        // Enforce boundary collision constraint to prevent overlapping blocks on the target track
+        const targetTrackCues = wordsToRender.filter((wObj) => {
+          const isSameBlock = wObj.id === item.id || (wObj.subId && wObj.subId === item.subId && mode === 'WORD');
+          return (wObj.trackIndex || 0) === newTrackIndex && !isSameBlock;
+        });
+
+        let minStart = 0;
+        let maxEnd = validDuration;
+
+        targetTrackCues.forEach((other) => {
+          if (other.end <= initialStart) {
+            minStart = Math.max(minStart, other.end);
+          } else if (other.start >= initialEnd) {
+            maxEnd = Math.min(maxEnd, other.start);
+          }
+        });
+
         newStart = Math.max(0, Math.min(validDuration - blockDuration, initialStart + deltaTime));
+        // Apply track bounds limits
+        newStart = Math.max(minStart, Math.min(maxEnd - blockDuration, newStart));
         newEnd = newStart + blockDuration;
 
         if (isSnapActive) {
           const snapThreshold = 0.08;
-          if (Math.abs(newStart - currentTime) < snapThreshold) {
+          if (Math.abs(newStart - currentTime) < snapThreshold && currentTime >= minStart && currentTime + blockDuration <= maxEnd) {
             newStart = currentTime;
             newEnd = newStart + blockDuration;
           }
         }
-      } else if (action === 'resize-left') {
-        newStart = Math.max(0, Math.min(initialEnd - 0.1, initialStart + deltaTime));
-      } else if (action === 'resize-right') {
-        newEnd = Math.max(initialStart + 0.1, Math.min(validDuration, initialEnd + deltaTime));
-      }
 
-      setDraggedOverrides((prev) => ({
-        ...prev,
-        [item.id]: { start: newStart, end: newEnd },
-      }));
+        setDraggedOverrides((prev) => ({
+          ...prev,
+          [item.id]: { start: newStart, end: newEnd, trackIndex: newTrackIndex },
+        }));
+      } else if (action === 'resize-left') {
+        // For resizing start, bound it to the previous sibling
+        const siblingTrackCues = wordsToRender.filter((wObj) => {
+          const isSameBlock = wObj.id === item.id || (wObj.subId && wObj.subId === item.subId && mode === 'WORD');
+          return (wObj.trackIndex || 0) === initialTrackIndex && !isSameBlock;
+        });
+        let minStart = 0;
+        siblingTrackCues.forEach((other) => {
+          if (other.end <= initialStart) {
+            minStart = Math.max(minStart, other.end);
+          }
+        });
+        newStart = Math.max(minStart, Math.min(initialEnd - 0.1, initialStart + deltaTime));
+        setDraggedOverrides((prev) => ({
+          ...prev,
+          [item.id]: { start: newStart, end: newEnd, trackIndex: newTrackIndex },
+        }));
+      } else if (action === 'resize-right') {
+        // For resizing end, bound it to the next sibling
+        const siblingTrackCues = wordsToRender.filter((wObj) => {
+          const isSameBlock = wObj.id === item.id || (wObj.subId && wObj.subId === item.subId && mode === 'WORD');
+          return (wObj.trackIndex || 0) === initialTrackIndex && !isSameBlock;
+        });
+        let maxEnd = validDuration;
+        siblingTrackCues.forEach((other) => {
+          if (other.start >= initialEnd) {
+            maxEnd = Math.min(maxEnd, other.start);
+          }
+        });
+        newEnd = Math.max(initialStart + 0.1, Math.min(maxEnd, initialEnd + deltaTime));
+        setDraggedOverrides((prev) => ({
+          ...prev,
+          [item.id]: { start: newStart, end: newEnd, trackIndex: newTrackIndex },
+        }));
+      }
     };
 
     const onMouseUp = () => {
@@ -288,24 +431,35 @@ export const Timeline = React.memo(function Timeline({
 
       setDraggedOverrides((latest) => {
         const finalOverride = latest[item.id];
-        if (finalOverride && item.subId) {
-          const sub = subtitles.find((s) => s.id === item.subId);
-          if (sub && sub.words && item.wordIndex !== undefined) {
-            const updatedWords = [...sub.words];
-            updatedWords[item.wordIndex] = {
-              ...updatedWords[item.wordIndex],
-              start: finalOverride.start,
-              end: finalOverride.end,
-            };
-            onUpdateSubtitle?.(item.subId, { words: updatedWords });
-          } else if (sub) {
-            onUpdateSubtitle?.(item.subId, {
-              start: finalOverride.start,
-              end: finalOverride.end,
-            });
+        if (finalOverride) {
+          const targetSubId = item.subId || item.id;
+          const sub = subtitles.find((s) => s.id === targetSubId);
+          if (sub) {
+            const nextTrackIndex = finalOverride.trackIndex !== undefined ? finalOverride.trackIndex : (sub.trackIndex || 0);
+            if (item.subId && sub.words && item.wordIndex !== undefined) {
+              const dur = (sub.end - sub.start) / sub.words.length;
+              const updatedWords = sub.words.map((w, idx) => ({
+                word: typeof w === 'string' ? w : w.word,
+                isHighlighted: w.isHighlighted || false,
+                start: w.start !== undefined ? w.start : sub.start + idx * dur,
+                end: w.end !== undefined ? w.end : sub.start + (idx + 1) * dur,
+              }));
+              updatedWords[item.wordIndex] = {
+                ...updatedWords[item.wordIndex],
+                start: finalOverride.start,
+                end: finalOverride.end,
+              };
+              onUpdateSubtitle?.(targetSubId, { words: updatedWords, trackIndex: nextTrackIndex });
+            } else {
+              onUpdateSubtitle?.(targetSubId, {
+                start: finalOverride.start,
+                end: finalOverride.end,
+                trackIndex: nextTrackIndex,
+              });
+            }
           }
         }
-        return latest;
+        return {}; // Clear overrides on mouseUp
       });
     };
 
@@ -333,59 +487,73 @@ export const Timeline = React.memo(function Timeline({
           ))}
         </div>
 
-        {/* 2. Track 1: Captions / Movable & Draggable Word Blocks Lane */}
-        <div className={`${isTimelineExpanded ? 'h-12' : 'h-9'} relative flex items-center px-1 transition-all duration-200 ${hiddenTracks.captions ? 'opacity-15 pointer-events-none' : 'opacity-100'}`}>
-          <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+        {/* 2. Track 1: Captions (Map support for dynamic multiple tracks) */}
+        {captionTracks.map((trackName, tIdx) => {
+          const isTrackHidden = hiddenTracks[`captions-${tIdx}`] !== undefined ? hiddenTracks[`captions-${tIdx}`] : hiddenTracks.captions;
+          const isLastTrack = tIdx === captionTracks.length - 1;
+          return (
+            <div
+              key={trackName}
+              className={`${isTimelineExpanded ? 'h-12' : 'h-9'} relative flex items-center px-1 transition-all duration-200 ${isTrackHidden ? 'opacity-15 pointer-events-none' : 'opacity-100'}`}
+            >
+              <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
 
-          {wordsToRender.map((wObj, idx) => {
-            const left = (wObj.start / validDuration) * 100;
-            const width = Math.max(3.5, ((wObj.end - wObj.start) / validDuration) * 100);
-            const isSelected = selectedWordId === wObj.id || (activeSubtitleId && wObj.subId === activeSubtitleId) || (selectedSubtitleId && wObj.subId === selectedSubtitleId);
-            const isDragging = draggingBlockId === wObj.id;
+              {wordsToRender
+                .filter((wObj) => (wObj.trackIndex || 0) === tIdx)
+                .map((wObj, idx) => {
+                  const left = (wObj.start / validDuration) * 100;
+                  const width = Math.max(3.5, ((wObj.end - wObj.start) / validDuration) * 100);
+                  const targetSubId = wObj.subId || wObj.id;
+                  const isSelected = selectedWordId === wObj.id || (activeSubtitleId && targetSubId === activeSubtitleId) || (selectedSubtitleId && targetSubId === selectedSubtitleId);
+                  const isDragging = draggingBlockId === wObj.id;
 
-            return (
-              <div
-                key={wObj.id || idx}
-                onClick={(e) => e.stopPropagation()}
-                onMouseDown={(e) => handleBlockMouseDown(e, wObj, 'move')}
-                style={{
-                  left: `${left}%`,
-                  width: `${width}%`,
-                  minWidth: '46px',
-                }}
-                className={`group/block absolute ${isTimelineExpanded ? 'top-1 bottom-1 py-0.5' : 'top-0.5 bottom-0.5 py-0'} rounded px-1.5 flex flex-col justify-center select-none transition-shadow ${
-                  isDragging
-                    ? 'bg-[#9A8A4B] text-white border-2 border-indigo-400 shadow-xl shadow-indigo-500/30 z-30 cursor-grabbing scale-[1.02]'
-                    : isSelected
-                    ? 'bg-[#9A8A4B] text-white border-2 border-indigo-400 shadow-md shadow-indigo-500/20 z-10 cursor-grab ring-1 ring-indigo-400/40'
-                    : 'bg-[#8F8044] hover:bg-[#9A8A4B] text-white border border-[#A69752] cursor-grab hover:shadow-sm'
-                }`}
-              >
-                <div
-                  onMouseDown={(e) => handleBlockMouseDown(e, wObj, 'resize-left')}
-                  className="absolute left-0 top-0 bottom-0 w-1.5 cursor-w-resize opacity-0 group-hover/block:opacity-100 bg-white/40 hover:bg-white rounded-l-[4px] transition-opacity"
-                  title="Drag to trim start"
-                />
+                  return (
+                    <div
+                      key={wObj.id || idx}
+                      onClick={(e) => e.stopPropagation()}
+                      onMouseDown={(e) => handleBlockMouseDown(e, wObj, 'move')}
+                      style={{
+                        left: `${left}%`,
+                        width: `${width}%`,
+                        minWidth: '46px',
+                      }}
+                      className={`group/block absolute ${isTimelineExpanded ? 'top-1 bottom-1 py-0.5' : 'top-0.5 bottom-0.5 py-0'} rounded px-1.5 flex flex-col justify-center select-none transition-shadow ${
+                        isDragging
+                          ? 'bg-[#9A8A4B] text-white border-2 border-indigo-400 shadow-xl shadow-indigo-500/30 z-30 cursor-grabbing scale-[1.02]'
+                          : isSelected
+                          ? 'bg-[#9A8A4B] text-white border-2 border-indigo-400 shadow-md shadow-indigo-500/20 z-10 cursor-grab ring-1 ring-indigo-400/40'
+                          : 'bg-[#8F8044] hover:bg-[#9A8A4B] text-white border border-[#A69752] cursor-grab hover:shadow-sm'
+                      }`}
+                    >
+                      <div
+                        onMouseDown={(e) => handleBlockMouseDown(e, wObj, 'resize-left')}
+                        className="absolute left-0 top-0 bottom-0 w-1.5 cursor-w-resize opacity-0 group-hover/block:opacity-100 bg-white/40 hover:bg-white rounded-l-[4px] transition-opacity"
+                        title="Drag to trim start"
+                      />
 
-                <div className="flex items-center justify-between gap-1 overflow-hidden pointer-events-none">
-                  <span className="text-[11px] font-bold truncate leading-tight">
-                    {wObj.word}
-                  </span>
-                  <GripHorizontal size={10} className="text-white/40 shrink-0 opacity-0 group-hover/block:opacity-100 transition-opacity" />
-                </div>
-                <span className="text-[8px] font-sans text-white/80 flex items-center gap-0.5 pointer-events-none truncate">
-                  <span className="italic font-serif text-[9px]">I</span> Text
-                </span>
+                      <div className="flex items-center justify-between gap-1 overflow-hidden pointer-events-none">
+                        <span className="text-[11px] font-bold truncate leading-tight">
+                          {wObj.word || wObj.text}
+                        </span>
+                        <GripHorizontal size={10} className="text-white/40 shrink-0 opacity-0 group-hover/block:opacity-100 transition-opacity" />
+                      </div>
+                      <span className="text-[8px] font-sans text-white/80 flex items-center gap-0.5 pointer-events-none truncate">
+                        <span className="italic font-serif text-[9px]">I</span> Text
+                      </span>
 
-                <div
-                  onMouseDown={(e) => handleBlockMouseDown(e, wObj, 'resize-right')}
-                  className="absolute right-0 top-0 bottom-0 w-1.5 cursor-e-resize opacity-0 group-hover/block:opacity-100 bg-white/40 hover:bg-white rounded-r-[4px] transition-opacity"
-                  title="Drag to trim end"
-                />
-              </div>
-            );
-          })}
-        </div>
+                      <div
+                        onMouseDown={(e) => handleBlockMouseDown(e, wObj, 'resize-right')}
+                        className="absolute right-0 top-0 bottom-0 w-1.5 cursor-e-resize opacity-0 group-hover/block:opacity-100 bg-white/40 hover:bg-white rounded-r-[4px] transition-opacity"
+                        title="Drag to trim end"
+                      />
+                    </div>
+                  );
+                })}
+
+
+            </div>
+          );
+        })}
 
         {/* 3. Track 2: Video 1 Lane */}
         <div className={`${isTimelineExpanded ? 'h-10' : 'h-8'} relative flex items-center px-1 transition-all duration-200 ${hiddenTracks.video ? 'opacity-15 pointer-events-none' : 'opacity-100'}`}>
@@ -414,50 +582,92 @@ export const Timeline = React.memo(function Timeline({
     selectedSubtitleId,
     draggingBlockId,
     zoomFactor,
+    captionTracks,
+    handleAddTrackClick,
   ]);
 
   return (
     <div className="w-full h-full bg-[#18181B] p-1.5 text-white select-none overflow-hidden rounded-2xl border border-[#27272A]/80 shadow-2xl font-sans flex gap-1.5">
       {/* LEFT SECTION: #242428 Card with rounded-[15px] */}
-      <div className="w-30 bg-[#242428] rounded-[15px] flex p-1.5 flex-col shrink-0 overflow-hidden h-full">
+      <div className="w-36 bg-[#242428] rounded-[15px] flex p-1.5 flex-col shrink-0 overflow-hidden h-full">
         {/* Top: Mode Switcher Pill [ WORD | LINE ] */}
         <div className={`${isTimelineExpanded ? 'h-10' : 'h-8'} px-1 flex items-center justify-center border-b border-[#2B2B32]/60 transition-all duration-200`}>
           <div className="flex items-center bg-[#18181B] p-0.5 rounded-lg border border-[#2B2B32] w-full justify-center">
-            <Button
-              variant={mode === 'WORD' ? 'primary' : 'quiet'}
-              onPress={() => setMode('WORD')}
-              className="flex-1 py-0.5 text-[10px] font-bold rounded-md transition-all cursor-pointer text-center"
+            <button
+              onClick={() => setMode('WORD')}
+              className={`flex-1 py-1 text-[10px] font-bold rounded-md transition-all cursor-pointer text-center ${
+                mode === 'WORD'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-[#A1A1AA] hover:bg-white/5 hover:text-white'
+              }`}
             >
               WORD
-            </Button>
-            <Button
-              variant={mode === 'LINE' ? 'primary' : 'quiet'}
-              onPress={() => setMode('LINE')}
-              className="flex-1 py-0.5 text-[10px] font-bold rounded-md transition-all cursor-pointer text-center"
+            </button>
+            <button
+              onClick={() => setMode('LINE')}
+              className={`flex-1 py-1 text-[10px] font-bold rounded-md transition-all cursor-pointer text-center ${
+                mode === 'LINE'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-[#A1A1AA] hover:bg-white/5 hover:text-white'
+              }`}
             >
               LINE
-            </Button>
+            </button>
           </div>
         </div>
 
         {/* Ruler Header Blank Spacer */}
         <div className={`${isTimelineExpanded ? 'h-7' : 'h-6'} border-b border-[#2B2B32]/60 transition-all duration-200`} />
 
-        {/* Track 1 Header: Captions */}
-        <div className={`${isTimelineExpanded ? 'h-12' : 'h-9'} px-2 flex items-center justify-between border-b border-[#2B2B32]/60 text-[11px] font-semibold text-white group transition-all duration-200`}>
-          <div className="flex items-center gap-1.5">
-            <span className="text-[#EAB308] italic font-serif font-bold text-xs">I</span>
-            <span>Captions</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => toggleTrackHidden('captions')}
-            className="text-[#71717A] hover:text-white transition-colors cursor-pointer p-0.5"
-            title={hiddenTracks.captions ? 'Show track' : 'Hide track'}
-          >
-            {hiddenTracks.captions ? <EyeOff size={11} className="text-red-400" /> : <Eye size={11} />}
-          </button>
-        </div>
+        {/* Track 1 Header: Captions (Mapping multi-track) */}
+        {captionTracks.map((trackName, tIdx) => {
+          const isLastTrack = tIdx === captionTracks.length - 1;
+          return (
+            <div
+              key={trackName}
+              className={`${isTimelineExpanded ? 'h-12' : 'h-9'} px-2 flex items-center justify-between border-b border-[#2B2B32]/60 text-[11px] font-semibold text-white group transition-all duration-200 relative`}
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="text-[#EAB308] italic font-serif font-bold text-xs">I</span>
+                <span>{trackName}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => toggleTrackHidden(`captions-${tIdx}`)}
+                  className="text-[#71717A] hover:text-white transition-colors cursor-pointer p-0.5"
+                  title={hiddenTracks[`captions-${tIdx}`] ? 'Show track' : 'Hide track'}
+                >
+                  {hiddenTracks[`captions-${tIdx}`] ? <EyeOff size={11} className="text-red-400" /> : <Eye size={11} />}
+                </button>
+                {tIdx > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCaptionTracks((prev) => prev.slice(0, prev.length - 1));
+                    }}
+                    className="text-[#71717A] hover:text-red-400 transition-colors cursor-pointer p-0.5"
+                    title="Remove track"
+                  >
+                    <Trash2 size={11} />
+                  </button>
+                )}
+              </div>
+
+              {/* Plus Button inside the last track's bottom border - ALWAYS VISIBLE */}
+              {isLastTrack && captionTracks.length < 3 && (
+                <button
+                  type="button"
+                  onClick={handleAddTrackClick}
+                  className="absolute bottom-[-8px] left-1/2 -translate-x-1/2 bg-[#27272A] hover:bg-[#3F3F46] text-[#A1A1AA] hover:text-white border border-[#3F3F46] w-4 h-4 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer z-30"
+                  title="Click to add a new caption track"
+                >
+                  <Plus size={10} strokeWidth={3} />
+                </button>
+              )}
+            </div>
+          );
+        })}
 
         {/* Track 2 Header: Video 1 */}
         <div className={`${isTimelineExpanded ? 'h-10' : 'h-8'} px-2 flex items-center justify-between border-b border-[#2B2B32]/60 text-[11px] font-semibold text-white group transition-all duration-200`}>
@@ -592,13 +802,14 @@ export const Timeline = React.memo(function Timeline({
                 <Tooltip placement="top">Zoom Out (-)</Tooltip>
               </TooltipTrigger>
 
-              <div className="w-20">
+              <div className="w-20 flex items-center justify-center">
                 <Slider
                   aria-label="Timeline Zoom"
                   minValue={0}
                   maxValue={100}
                   value={zoomLevel}
                   onChange={(val) => setZoomLevel(Number(val))}
+                  showOutput={false}
                   className="w-full"
                 />
               </div>
@@ -635,7 +846,7 @@ export const Timeline = React.memo(function Timeline({
         {/* 2. MULTI-TRACK TIMELINE BODY */}
         <div className="flex flex-1 min-h-0 w-full overflow-hidden bg-[#18181B] transition-all duration-200">
           {/* Scrollable Tracks Area */}
-          <div className="flex-1 overflow-x-auto overflow-y-hidden relative custom-scrollbar bg-[#18181B]">
+          <div ref={scrollContainerRef} className="flex-1 overflow-x-auto overflow-y-hidden relative custom-scrollbar bg-[#18181B]">
             <div
               ref={trackContainerRef}
               onClick={handleTrackClick}

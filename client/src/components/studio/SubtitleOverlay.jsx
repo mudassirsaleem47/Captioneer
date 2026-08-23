@@ -5,9 +5,20 @@ export const SubtitleOverlay = ({ activeCue, currentTime, style }) => {
 
   const { text, words, start, end } = activeCue;
 
-  // Split text into words if words array is not present or empty
+  // Split text into words if words array is not present or empty, and ensure timings exist
   const wordList = useMemo(() => {
-    if (words && words.length > 0) return words;
+    if (words && words.length > 0) {
+      const hasTimings = words.every((w) => w.start !== undefined && w.end !== undefined);
+      if (hasTimings) return words;
+
+      const duration = Math.max(0.1, end - start);
+      const step = duration / words.length;
+      return words.map((w, idx) => ({
+        ...w,
+        start: start + idx * step,
+        end: start + (idx + 1) * step,
+      }));
+    }
 
     const rawWords = (text || '').trim().split(/\s+/).filter(Boolean);
     const duration = Math.max(0.1, end - start);

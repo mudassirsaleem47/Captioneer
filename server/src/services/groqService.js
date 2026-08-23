@@ -60,12 +60,20 @@ export async function transcribeAudioWithGroq(audioFilePath, options = {}) {
     temperature: typeof temperature === 'number' ? temperature : 0.0,
   };
 
+  let finalPrompt = prompt || '';
   if (language && typeof language === 'string' && language.trim().length > 0) {
-    requestPayload.language = language.trim().toLowerCase();
+    const langCode = language.trim().toLowerCase();
+    if (langCode === 'roman-urdu') {
+      requestPayload.language = 'ur';
+      const romanUrduPrompt = 'Transcribe this Urdu audio into Roman Urdu using English/Latin script (e.g. kya haal hai, kaise ho, shukriya, bohot acha). Do not use Urdu/Arabic script.';
+      finalPrompt = finalPrompt ? `${finalPrompt}. ${romanUrduPrompt}` : romanUrduPrompt;
+    } else {
+      requestPayload.language = langCode;
+    }
   }
 
-  if (prompt && typeof prompt === 'string' && prompt.trim().length > 0) {
-    requestPayload.prompt = prompt.trim();
+  if (finalPrompt && typeof finalPrompt === 'string' && finalPrompt.trim().length > 0) {
+    requestPayload.prompt = finalPrompt.trim();
   }
 
   if (wordLevelTimestamps) {

@@ -2,7 +2,7 @@
 :root {
   /* Change this variable to set the theme color for all components. */
   /* You can use the below presets, or choose a custom color. */
-  --tint: var(--indigo);
+  --tint: var(--blue);
 
   /* theme colors */
   /* lightness channel is only used as a multiplier for chroma (see below) */

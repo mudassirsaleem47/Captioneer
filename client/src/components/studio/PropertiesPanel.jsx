@@ -69,7 +69,7 @@ export const PropertiesPanel = React.memo(function PropertiesPanel({
   const content = UI_CONTENT.stylePanel;
 
   return (
-    <div className="w-72 2xl:w-80 h-full min-h-0 bg-[#18181B] p-1.5 text-white select-none overflow-hidden rounded-2xl border border-[#27272A]/80 shadow-2xl flex items-stretch shrink-0">
+    <div className="w-full h-full min-h-0 bg-[#18181B] p-1.5 text-white select-none overflow-hidden rounded-2xl border border-[#27272A]/80 shadow-2xl flex items-stretch shrink-0">
       {/* 1. LEFT SIDEBAR MENU */}
       <nav className="w-11 h-full bg-[#242428] flex flex-col items-center py-3 gap-2.5 shrink-0 rounded-[15px]">
         {/* Presets Tab */}

@@ -249,6 +249,7 @@ export const UI_CONTENT = {
       { label: 'Auto Detect Language', value: '' },
       { label: 'English', value: 'en' },
       { label: 'Urdu', value: 'ur' },
+      { label: 'Roman Urdu', value: 'roman-urdu' },
       { label: 'Hindi', value: 'hi' },
       { label: 'Spanish', value: 'es' },
       { label: 'French', value: 'fr' },
