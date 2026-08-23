@@ -21,6 +21,7 @@ import {
   MenuTrigger,
 } from '../ui/Menu';
 import { Tooltip, TooltipTrigger } from '../ui/Tooltip';
+import { SubtitleOverlay } from './SubtitleOverlay';
 
 function formatTimestamp(secs) {
   if (isNaN(secs) || secs < 0) secs = 0;
@@ -45,6 +46,7 @@ export const VideoPlayer = React.memo(function VideoPlayer({
   onUploadVideo,
   aspectRatio: controlledAspectRatio,
   onAspectRatioChange,
+  style = {},
 }) {
   const playerContainerRef = useRef(null);
   const videoRef = useRef(null);
@@ -230,34 +232,11 @@ export const VideoPlayer = React.memo(function VideoPlayer({
           )}
 
           {/* Kinetic Active Subtitles Overlay */}
-          {activeCue && (
-            <div className="absolute bottom-12 left-4 right-4 z-20 flex flex-col items-center justify-center pointer-events-none text-center">
-              <div className="flex flex-wrap items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 shadow-2xl">
-                {activeCue.words && activeCue.words.length > 0 ? (
-                  activeCue.words.map((w, wIdx) => {
-                    const wordStr = typeof w === 'string' ? w : w.word;
-                    const isHigh = typeof w === 'object' ? w.isHighlighted : false;
-                    return (
-                      <span
-                        key={wIdx}
-                        className={`text-base font-extrabold tracking-tight transition-all duration-150 ${
-                          isHigh
-                            ? 'text-indigo-400 scale-110 drop-shadow-[0_2px_10px_rgba(99,102,241,0.5)]'
-                            : 'text-white'
-                        }`}
-                      >
-                        {wordStr}
-                      </span>
-                    );
-                  })
-                ) : (
-                  <span className="text-base font-extrabold text-white tracking-tight">
-                    {activeCue.text}
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
+          <SubtitleOverlay
+            activeCue={activeCue}
+            currentTime={currentTime}
+            style={style}
+          />
 
           {/* Hover Play/Pause Overlay Indicator (Only when video uploaded) */}
           {videoSrc && (
@@ -288,25 +267,25 @@ export const VideoPlayer = React.memo(function VideoPlayer({
         </div>
 
         {/* Playback Controls Row */}
-        <div className="h-12 px-4 flex items-center justify-between gap-3">
+        <div className="h-9 px-2.5 flex items-center justify-between gap-2.5">
           {/* Left Side: Current Timestamp & Duration */}
-          <div className="flex items-center gap-1.5 text-xs font-medium text-[#A1A1AA] select-none">
-            <span className="text-white font-semibold">{formatTimestamp(currentTime)}</span>
+          <div className="flex items-center gap-1 text-[10px] font-semibold text-[#A1A1AA] select-none">
+            <span className="text-white font-bold">{formatTimestamp(currentTime)}</span>
             <span>/</span>
             <span>{formatTimestamp(validDuration)}</span>
           </div>
 
           {/* Center: Playback Transport Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {/* Skip Back 5s */}
             <TooltipTrigger delay={100}>
               <Button
                 variant="quiet"
                 onPress={() => handleSkip(-5)}
                 aria-label="Skip backward 5 seconds"
-                className="w-8 h-8 p-0 text-[#A1A1AA] hover:text-white"
+                className="w-7 h-7 p-0 text-[#A1A1AA] hover:text-white flex items-center justify-center rounded-md"
               >
-                <RotateCcw size={15} />
+                <RotateCcw size={13} />
               </Button>
               <Tooltip placement="top">Back 5s</Tooltip>
             </TooltipTrigger>
@@ -316,9 +295,9 @@ export const VideoPlayer = React.memo(function VideoPlayer({
               <Button
                 onPress={onTogglePlay}
                 aria-label={isPlaying ? 'Pause' : 'Play'}
-                className="w-9 h-9 p-0 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full flex items-center justify-center shadow-md shadow-indigo-500/25"
+                className="w-8 h-8 p-0 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full flex items-center justify-center shadow-md shadow-indigo-500/25"
               >
-                {isPlaying ? <Pause size={16} /> : <Play size={16} className="ml-0.5" />}
+                {isPlaying ? <Pause size={14} /> : <Play size={14} className="ml-0.5" />}
               </Button>
               <Tooltip placement="top">{isPlaying ? 'Pause (Space)' : 'Play (Space)'}</Tooltip>
             </TooltipTrigger>
@@ -329,26 +308,26 @@ export const VideoPlayer = React.memo(function VideoPlayer({
                 variant="quiet"
                 onPress={() => handleSkip(5)}
                 aria-label="Skip forward 5 seconds"
-                className="w-8 h-8 p-0 text-[#A1A1AA] hover:text-white"
+                className="w-7 h-7 p-0 text-[#A1A1AA] hover:text-white flex items-center justify-center rounded-md"
               >
-                <RotateCw size={15} />
+                <RotateCw size={13} />
               </Button>
               <Tooltip placement="top">Forward 5s</Tooltip>
             </TooltipTrigger>
           </div>
 
           {/* Right Side: Aspect Ratio, Volume & Fullscreen */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             {/* Aspect Ratio Menu */}
             <MenuTrigger>
               <Button
                 variant="quiet"
                 aria-label="Change aspect ratio"
-                className="h-8 px-2 text-xs font-medium text-[#A1A1AA] hover:text-white rounded-lg gap-1.5"
+                className="h-7 px-1.5 text-[10px] font-semibold text-[#A1A1AA] hover:text-white rounded-md gap-1 flex items-center"
               >
-                {aspectRatio === '9:16' && <Smartphone size={13} />}
-                {aspectRatio === '16:9' && <Tv size={13} />}
-                {aspectRatio === '1:1' && <Square size={13} />}
+                {aspectRatio === '9:16' && <Smartphone size={12} />}
+                {aspectRatio === '16:9' && <Tv size={12} />}
+                {aspectRatio === '1:1' && <Square size={12} />}
                 <span>{aspectRatio}</span>
               </Button>
               <Menu
@@ -361,7 +340,7 @@ export const VideoPlayer = React.memo(function VideoPlayer({
               </Menu>
             </MenuTrigger>
 
-            <div className="h-4 w-px bg-[#2B2B32]" />
+            <div className="h-3.5 w-px bg-[#2B2B32]" />
 
             {/* Volume Mute Toggle */}
             <TooltipTrigger delay={100}>
@@ -369,9 +348,9 @@ export const VideoPlayer = React.memo(function VideoPlayer({
                 variant="quiet"
                 onPress={() => setIsMuted((prev) => !prev)}
                 aria-label={isMuted ? 'Unmute' : 'Mute'}
-                className="w-8 h-8 p-0 text-[#A1A1AA] hover:text-white"
+                className="w-7 h-7 p-0 text-[#A1A1AA] hover:text-white flex items-center justify-center rounded-md"
               >
-                {isMuted ? <VolumeX size={15} className="text-red-400" /> : <Volume2 size={15} />}
+                {isMuted ? <VolumeX size={13} className="text-red-400" /> : <Volume2 size={13} />}
               </Button>
               <Tooltip placement="top">{isMuted ? 'Unmute' : 'Mute'}</Tooltip>
             </TooltipTrigger>
@@ -382,9 +361,9 @@ export const VideoPlayer = React.memo(function VideoPlayer({
                 variant="quiet"
                 onPress={handleToggleFullscreen}
                 aria-label={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-                className="w-8 h-8 p-0 text-[#A1A1AA] hover:text-white"
+                className="w-7 h-7 p-0 text-[#A1A1AA] hover:text-white flex items-center justify-center rounded-md"
               >
-                {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                {isFullscreen ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
               </Button>
               <Tooltip placement="top">{isFullscreen ? 'Exit Fullscreen (ESC)' : 'Fullscreen'}</Tooltip>
             </TooltipTrigger>

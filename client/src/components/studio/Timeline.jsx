@@ -318,7 +318,7 @@ export const Timeline = React.memo(function Timeline({
     return (
       <>
         {/* 1. Time Ruler */}
-        <div className={`${isTimelineExpanded ? 'h-8' : 'h-7'} border-b border-[#27272A] relative select-none bg-[#18181B] transition-all duration-200`}>
+        <div className={`${isTimelineExpanded ? 'h-7' : 'h-6'} border-b border-[#27272A] relative select-none bg-[#18181B] transition-all duration-200`}>
           {rulerMarks.map((m, i) => (
             <div
               key={i}
@@ -326,7 +326,7 @@ export const Timeline = React.memo(function Timeline({
               style={{ left: `${m.leftPct}%` }}
             >
               <div className="w-px h-2 bg-[#3F3F46]" />
-              <span className="text-[10px] font-normal text-[#71717A] ml-1.5 -mt-0.5 select-none whitespace-nowrap">
+              <span className="text-[9px] font-normal text-[#71717A] ml-1.5 -mt-0.5 select-none whitespace-nowrap">
                 {m.label}
               </span>
             </div>
@@ -334,7 +334,7 @@ export const Timeline = React.memo(function Timeline({
         </div>
 
         {/* 2. Track 1: Captions / Movable & Draggable Word Blocks Lane */}
-        <div className={`${isTimelineExpanded ? 'h-16' : 'h-11'} relative flex items-center px-1 transition-all duration-200 ${hiddenTracks.captions ? 'opacity-15 pointer-events-none' : 'opacity-100'}`}>
+        <div className={`${isTimelineExpanded ? 'h-12' : 'h-9'} relative flex items-center px-1 transition-all duration-200 ${hiddenTracks.captions ? 'opacity-15 pointer-events-none' : 'opacity-100'}`}>
           <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
 
           {wordsToRender.map((wObj, idx) => {
@@ -353,7 +353,7 @@ export const Timeline = React.memo(function Timeline({
                   width: `${width}%`,
                   minWidth: '46px',
                 }}
-                className={`group/block absolute ${isTimelineExpanded ? 'top-2 bottom-2 py-1' : 'top-1 bottom-1 py-0.5'} rounded-[6px] px-2 flex flex-col justify-center select-none transition-shadow ${
+                className={`group/block absolute ${isTimelineExpanded ? 'top-1 bottom-1 py-0.5' : 'top-0.5 bottom-0.5 py-0'} rounded px-1.5 flex flex-col justify-center select-none transition-shadow ${
                   isDragging
                     ? 'bg-[#9A8A4B] text-white border-2 border-indigo-400 shadow-xl shadow-indigo-500/30 z-30 cursor-grabbing scale-[1.02]'
                     : isSelected
@@ -368,13 +368,13 @@ export const Timeline = React.memo(function Timeline({
                 />
 
                 <div className="flex items-center justify-between gap-1 overflow-hidden pointer-events-none">
-                  <span className="text-xs font-bold truncate leading-tight">
+                  <span className="text-[11px] font-bold truncate leading-tight">
                     {wObj.word}
                   </span>
                   <GripHorizontal size={10} className="text-white/40 shrink-0 opacity-0 group-hover/block:opacity-100 transition-opacity" />
                 </div>
-                <span className="text-[9px] font-sans text-white/80 flex items-center gap-0.5 pointer-events-none truncate">
-                  <span className="italic font-serif text-[10px]">I</span> Text
+                <span className="text-[8px] font-sans text-white/80 flex items-center gap-0.5 pointer-events-none truncate">
+                  <span className="italic font-serif text-[9px]">I</span> Text
                 </span>
 
                 <div
@@ -388,14 +388,14 @@ export const Timeline = React.memo(function Timeline({
         </div>
 
         {/* 3. Track 2: Video 1 Lane */}
-        <div className={`${isTimelineExpanded ? 'h-15' : 'h-11'} relative flex items-center px-1 transition-all duration-200 ${hiddenTracks.video ? 'opacity-15 pointer-events-none' : 'opacity-100'}`}>
+        <div className={`${isTimelineExpanded ? 'h-10' : 'h-8'} relative flex items-center px-1 transition-all duration-200 ${hiddenTracks.video ? 'opacity-15 pointer-events-none' : 'opacity-100'}`}>
           <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
-          <div className={`w-full ${isTimelineExpanded ? 'h-11' : 'h-8'} bg-[#3882B6] rounded-[4px] border border-[#4895CD] flex items-center px-2 shadow-xs cursor-default transition-all duration-200`} />
+          <div className={`w-full ${isTimelineExpanded ? 'h-8' : 'h-6'} bg-[#3882B6] rounded-[4px] border border-[#4895CD] flex items-center px-2 shadow-xs cursor-default transition-all duration-200`} />
         </div>
 
         {/* 4. Track 3: Audio 1 Professional Waveform Lane */}
-        <div className={`${isTimelineExpanded ? 'h-15' : 'h-11'} relative flex items-center px-1 bg-[#18181B] transition-all duration-200 ${hiddenTracks.audio ? 'opacity-15 pointer-events-none' : 'opacity-100'}`}>
-          <div className={`w-full ${isTimelineExpanded ? 'h-11' : 'h-8'} bg-[#0D2E21] border border-[#144733] rounded-[4px] relative overflow-hidden flex items-center px-2 shadow-xs transition-all duration-200`}>
+        <div className={`${isTimelineExpanded ? 'h-10' : 'h-8'} relative flex items-center px-1 bg-[#18181B] transition-all duration-200 ${hiddenTracks.audio ? 'opacity-15 pointer-events-none' : 'opacity-100'}`}>
+          <div className={`w-full ${isTimelineExpanded ? 'h-8' : 'h-6'} bg-[#0D2E21] border border-[#144733] rounded-[4px] relative overflow-hidden flex items-center px-2 shadow-xs transition-all duration-200`}>
             <div className="absolute inset-0 left-2 right-2 flex items-center pointer-events-none">
               <AudioWaveformCanvas duration={validDuration} zoomFactor={zoomFactor} isHidden={hiddenTracks.audio} />
             </div>
@@ -419,21 +419,21 @@ export const Timeline = React.memo(function Timeline({
   return (
     <div className="w-full h-full bg-[#18181B] p-1.5 text-white select-none overflow-hidden rounded-2xl border border-[#27272A]/80 shadow-2xl font-sans flex gap-1.5">
       {/* LEFT SECTION: #242428 Card with rounded-[15px] */}
-      <div className="w-40 bg-[#242428] rounded-[15px] flex p-2 flex-col shrink-0 overflow-hidden h-full">
+      <div className="w-30 bg-[#242428] rounded-[15px] flex p-1.5 flex-col shrink-0 overflow-hidden h-full">
         {/* Top: Mode Switcher Pill [ WORD | LINE ] */}
-        <div className={`${isTimelineExpanded ? 'h-12' : 'h-10'} px-2 flex items-center justify-center border-b border-[#2B2B32]/60 transition-all duration-200`}>
+        <div className={`${isTimelineExpanded ? 'h-10' : 'h-8'} px-1 flex items-center justify-center border-b border-[#2B2B32]/60 transition-all duration-200`}>
           <div className="flex items-center bg-[#18181B] p-0.5 rounded-lg border border-[#2B2B32] w-full justify-center">
             <Button
               variant={mode === 'WORD' ? 'primary' : 'quiet'}
               onPress={() => setMode('WORD')}
-              className="flex-1 py-1 text-xs font-bold rounded-md transition-all cursor-pointer text-center"
+              className="flex-1 py-0.5 text-[10px] font-bold rounded-md transition-all cursor-pointer text-center"
             >
               WORD
             </Button>
             <Button
               variant={mode === 'LINE' ? 'primary' : 'quiet'}
               onPress={() => setMode('LINE')}
-              className="flex-1 py-1 text-xs font-bold rounded-md transition-all cursor-pointer text-center"
+              className="flex-1 py-0.5 text-[10px] font-bold rounded-md transition-all cursor-pointer text-center"
             >
               LINE
             </Button>
@@ -441,12 +441,12 @@ export const Timeline = React.memo(function Timeline({
         </div>
 
         {/* Ruler Header Blank Spacer */}
-        <div className={`${isTimelineExpanded ? 'h-8' : 'h-7'} border-b border-[#2B2B32]/60 transition-all duration-200`} />
+        <div className={`${isTimelineExpanded ? 'h-7' : 'h-6'} border-b border-[#2B2B32]/60 transition-all duration-200`} />
 
         {/* Track 1 Header: Captions */}
-        <div className={`${isTimelineExpanded ? 'h-16' : 'h-11'} px-3 flex items-center justify-between border-b border-[#2B2B32]/60 text-xs font-semibold text-white group transition-all duration-200`}>
-          <div className="flex items-center gap-2">
-            <span className="text-[#EAB308] italic font-serif font-bold text-sm">I</span>
+        <div className={`${isTimelineExpanded ? 'h-12' : 'h-9'} px-2 flex items-center justify-between border-b border-[#2B2B32]/60 text-[11px] font-semibold text-white group transition-all duration-200`}>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[#EAB308] italic font-serif font-bold text-xs">I</span>
             <span>Captions</span>
           </div>
           <button
@@ -455,14 +455,14 @@ export const Timeline = React.memo(function Timeline({
             className="text-[#71717A] hover:text-white transition-colors cursor-pointer p-0.5"
             title={hiddenTracks.captions ? 'Show track' : 'Hide track'}
           >
-            {hiddenTracks.captions ? <EyeOff size={13} className="text-red-400" /> : <Eye size={13} />}
+            {hiddenTracks.captions ? <EyeOff size={11} className="text-red-400" /> : <Eye size={11} />}
           </button>
         </div>
 
         {/* Track 2 Header: Video 1 */}
-        <div className={`${isTimelineExpanded ? 'h-15' : 'h-11'} px-3 flex items-center justify-between border-b border-[#2B2B32]/60 text-xs font-semibold text-white group transition-all duration-200`}>
-          <div className="flex items-center gap-2">
-            <Video size={14} className="text-[#3882B6]" />
+        <div className={`${isTimelineExpanded ? 'h-10' : 'h-8'} px-2 flex items-center justify-between border-b border-[#2B2B32]/60 text-[11px] font-semibold text-white group transition-all duration-200`}>
+          <div className="flex items-center gap-1.5">
+            <Video size={12} className="text-[#3882B6]" />
             <span>Video 1</span>
           </div>
           <button
@@ -471,14 +471,14 @@ export const Timeline = React.memo(function Timeline({
             className="text-[#71717A] hover:text-white transition-colors cursor-pointer p-0.5"
             title={hiddenTracks.video ? 'Show track' : 'Hide track'}
           >
-            {hiddenTracks.video ? <EyeOff size={13} className="text-red-400" /> : <Eye size={13} />}
+            {hiddenTracks.video ? <EyeOff size={11} className="text-red-400" /> : <Eye size={11} />}
           </button>
         </div>
 
         {/* Track 3 Header: Audio 1 */}
-        <div className={`${isTimelineExpanded ? 'h-15' : 'h-11'} px-3 flex items-center justify-between text-xs font-semibold text-white group transition-all duration-200`}>
-          <div className="flex items-center gap-2">
-            <Volume2 size={14} className="text-[#10B981]" />
+        <div className={`${isTimelineExpanded ? 'h-10' : 'h-8'} px-2 flex items-center justify-between text-[11px] font-semibold text-white group transition-all duration-200`}>
+          <div className="flex items-center gap-1.5">
+            <Volume2 size={12} className="text-[#10B981]" />
             <span>Audio 1</span>
           </div>
           <button
@@ -487,7 +487,7 @@ export const Timeline = React.memo(function Timeline({
             className="text-[#71717A] hover:text-white transition-colors cursor-pointer p-0.5"
             title={hiddenTracks.audio ? 'Show track' : 'Hide track'}
           >
-            {hiddenTracks.audio ? <EyeOff size={13} className="text-red-400" /> : <Eye size={13} />}
+            {hiddenTracks.audio ? <EyeOff size={11} className="text-red-400" /> : <Eye size={11} />}
           </button>
         </div>
       </div>
@@ -497,17 +497,17 @@ export const Timeline = React.memo(function Timeline({
         {/* 1. TOP HORIZONTAL TOOLBAR */}
         <Toolbar
           aria-label="Timeline Editing Tools"
-          className="h-12 w-full bg-[#18181B] px-3 flex items-center justify-between shrink-0 border-b border-[#27272A]"
+          className="h-9 w-full bg-[#18181B] px-2 flex items-center justify-between shrink-0 border-b border-[#27272A]"
         >
           {/* Left Actions */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <Button
               variant="quiet"
               onPress={() => onAddSubtitle?.()}
               aria-label="Add Word"
-              className="h-8 px-2.5 text-xs font-semibold text-white hover:bg-white/5 rounded-lg gap-1.5"
+              className="h-7 px-2 text-[11px] font-semibold text-white hover:bg-white/5 rounded-md gap-1 flex items-center"
             >
-              <Plus size={14} />
+              <Plus size={12} />
               <span>Word</span>
             </Button>
 
@@ -515,9 +515,9 @@ export const Timeline = React.memo(function Timeline({
               <Button
                 variant="quiet"
                 aria-label="Filter Properties"
-                className="w-8 h-8 p-0 text-[#A1A1AA] hover:text-white"
+                className="w-7 h-7 p-0 text-[#A1A1AA] hover:text-white flex items-center justify-center rounded-md"
               >
-                <SlidersHorizontal size={14} />
+                <SlidersHorizontal size={13} />
               </Button>
               <Tooltip placement="top">Track Filters</Tooltip>
             </TooltipTrigger>
@@ -529,9 +529,9 @@ export const Timeline = React.memo(function Timeline({
                   if (activeSubtitleId) onSplitSubtitle?.(activeSubtitleId);
                 }}
                 aria-label="Split Segment (S)"
-                className="w-8 h-8 p-0 text-[#A1A1AA] hover:text-white"
+                className="w-7 h-7 p-0 text-[#A1A1AA] hover:text-white flex items-center justify-center rounded-md"
               >
-                <Scissors size={14} />
+                <Scissors size={13} />
               </Button>
               <Tooltip placement="top">Split Segment (S)</Tooltip>
             </TooltipTrigger>
@@ -543,23 +543,23 @@ export const Timeline = React.memo(function Timeline({
                   if (activeSubtitleId) onDeleteSubtitle?.(activeSubtitleId);
                 }}
                 aria-label="Delete Segment"
-                className="w-8 h-8 p-0 text-[#A1A1AA] hover:text-red-400"
+                className="w-7 h-7 p-0 text-[#A1A1AA] hover:text-red-400 flex items-center justify-center rounded-md"
               >
-                <Trash2 size={14} />
+                <Trash2 size={13} />
               </Button>
               <Tooltip placement="top">Delete Block</Tooltip>
             </TooltipTrigger>
 
-            <div className="h-4 w-px bg-[#27272A] mx-1" />
+            <div className="h-3.5 w-px bg-[#27272A] mx-0.5" />
 
             <TooltipTrigger delay={100}>
               <ToggleButton
                 isSelected={isSnapActive}
                 onChange={setIsSnapActive}
                 aria-label="Snap to Edges (N)"
-                className="w-8 h-8 p-0 rounded-lg text-[#A1A1AA] data-selected:bg-indigo-600 data-selected:text-white"
+                className="w-7 h-7 p-0 rounded-md text-[#A1A1AA] data-selected:bg-indigo-600 data-selected:text-white flex items-center justify-center"
               >
-                <Magnet size={14} />
+                <Magnet size={13} />
               </ToggleButton>
               <Tooltip placement="top">Magnet Snap (N)</Tooltip>
             </TooltipTrigger>
@@ -569,30 +569,30 @@ export const Timeline = React.memo(function Timeline({
                 isSelected={isLinkActive}
                 onChange={setIsLinkActive}
                 aria-label="Link Selection (L)"
-                className="w-8 h-8 p-0 rounded-lg text-[#A1A1AA] data-selected:bg-indigo-600 data-selected:text-white"
+                className="w-7 h-7 p-0 rounded-md text-[#A1A1AA] data-selected:bg-indigo-600 data-selected:text-white flex items-center justify-center"
               >
-                <Link2 size={14} />
+                <Link2 size={13} />
               </ToggleButton>
               <Tooltip placement="top">Link Tracks (L)</Tooltip>
             </TooltipTrigger>
           </div>
 
           {/* Right Actions: Zoom & Expand */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
               <TooltipTrigger delay={100}>
                 <Button
                   variant="quiet"
                   onPress={() => setZoomLevel((z) => Math.max(0, z - 15))}
                   aria-label="Zoom Out"
-                  className="w-7 h-7 p-0 text-[#A1A1AA] hover:text-white"
+                  className="w-6 h-6 p-0 text-[#A1A1AA] hover:text-white flex items-center justify-center rounded-md"
                 >
-                  <ZoomOut size={14} />
+                  <ZoomOut size={12} />
                 </Button>
                 <Tooltip placement="top">Zoom Out (-)</Tooltip>
               </TooltipTrigger>
 
-              <div className="w-24">
+              <div className="w-20">
                 <Slider
                   aria-label="Timeline Zoom"
                   minValue={0}
@@ -608,24 +608,24 @@ export const Timeline = React.memo(function Timeline({
                   variant="quiet"
                   onPress={() => setZoomLevel((z) => Math.min(100, z + 15))}
                   aria-label="Zoom In"
-                  className="w-7 h-7 p-0 text-[#A1A1AA] hover:text-white"
+                  className="w-6 h-6 p-0 text-[#A1A1AA] hover:text-white flex items-center justify-center rounded-md"
                 >
-                  <ZoomIn size={14} />
+                  <ZoomIn size={12} />
                 </Button>
                 <Tooltip placement="top">Zoom In (+)</Tooltip>
               </TooltipTrigger>
             </div>
 
-            <div className="h-4 w-px bg-[#27272A] mx-1" />
+            <div className="h-3.5 w-px bg-[#27272A] mx-0.5" />
 
             <TooltipTrigger delay={100}>
               <Button
                 variant="quiet"
                 onPress={toggleExpand}
                 aria-label={isTimelineExpanded ? 'Collapse Timeline' : 'Expand Timeline'}
-                className="w-7 h-7 p-0 text-[#A1A1AA] hover:text-white"
+                className="w-6 h-6 p-0 text-[#A1A1AA] hover:text-white flex items-center justify-center rounded-md"
               >
-                {isTimelineExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+                {isTimelineExpanded ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
               </Button>
               <Tooltip placement="top">{isTimelineExpanded ? 'Collapse Timeline' : 'Expand Timeline'}</Tooltip>
             </TooltipTrigger>
@@ -652,7 +652,8 @@ export const Timeline = React.memo(function Timeline({
                 {/* Indigo Playhead Top Handle */}
                 <div
                   onMouseDown={handlePlayheadMouseDown}
-                  className="w-3.5 h-4 bg-indigo-500 rounded-t-sm rounded-b-md shadow-md pointer-events-auto cursor-ew-resize"
+                  className="w-3.5 h-4 bg-indigo-500 shadow-md pointer-events-auto cursor-ew-resize"
+                  style={{clipPath: "polygon(0% 0%, 100% 0%, 100% 60%, 50% 100%, 0% 60%)"}}  
                 />
                 {/* Laser Vertical Guideline */}
                 <div className="w-[1.5px] flex-1 bg-indigo-500 shadow-sm" />

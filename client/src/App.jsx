@@ -6,6 +6,7 @@ import { VideoPlayer } from './components/studio/VideoPlayer';
 import { PropertiesPanel } from './components/studio/PropertiesPanel';
 import { UploadModal } from './components/studio/UploadModal';
 import { ExportModal } from './components/studio/ExportModal';
+import { UI_CONTENT } from './config/uiContent';
 
 const INITIAL_SUBTITLES = [
   {
@@ -99,6 +100,22 @@ export default function App() {
   const [videoSrc, setVideoSrc] = useState(null);
   const [aspectRatio, setAspectRatio] = useState('9:16'); // '9:16' | '16:9' | '1:1'
   const [isTimelineExpanded, setIsTimelineExpanded] = useState(false);
+
+  // Subtitle Style State
+  const [subtitleStyle, setSubtitleStyle] = useState(
+    UI_CONTENT.stylePanel.presets[0].style
+  );
+
+  const handleStyleChange = useCallback((updates) => {
+    setSubtitleStyle((prev) => ({ ...prev, ...updates }));
+  }, []);
+
+  const handleApplyPreset = useCallback((presetId) => {
+    const preset = UI_CONTENT.stylePanel.presets.find((p) => p.id === presetId);
+    if (preset) {
+      setSubtitleStyle(preset.style);
+    }
+  }, []);
 
   // Modals state
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -333,9 +350,9 @@ export default function App() {
       {/* 2. Main Studio Workspace Layout */}
       {isReelsLayout ? (
         /* ==================== REELS VERTICAL 9:16 LAYOUT ==================== */
-        <main className="flex-1 min-h-0 px-4 pb-3 relative overflow-hidden bg-[#09090B] flex gap-3 items-stretch">
+        <main className="flex-1 min-h-0 px-2 pb-2 relative overflow-hidden bg-[#09090B] flex gap-2 items-stretch">
           {/* Left Column: [Caption Inspector (Top)] + [Timeline (Bottom)] */}
-          <div className="flex-1 min-w-0 h-full flex flex-col gap-3">
+          <div className="flex-1 min-w-0 h-full flex flex-col gap-2">
             {/* Top: Caption Inspector */}
             <div className="flex-1 min-h-0 h-full flex flex-col">
               <CaptionInspector
@@ -387,19 +404,24 @@ export default function App() {
               onDurationChange={setDuration}
               videoSrc={videoSrc}
               onUploadVideo={handleOpenUploadModal}
+              style={subtitleStyle}
             />
           </div>
 
           {/* Right Column: Properties Panel */}
-          <PropertiesPanel />
+          <PropertiesPanel
+            style={subtitleStyle}
+            onStyleChange={handleStyleChange}
+            onApplyPreset={handleApplyPreset}
+          />
         </main>
       ) : (
         /* ==================== YOUTUBE / SQUARE 16:9 / 1:1 LAYOUT ==================== */
-        <main className="flex-1 min-h-0 px-4 pb-3 relative overflow-hidden bg-[#09090B] flex gap-3 items-stretch">
+        <main className="flex-1 min-h-0 px-2 pb-2 relative overflow-hidden bg-[#09090B] flex gap-2 items-stretch">
           {/* Left & Center Area: [Caption Inspector + Player] on Top, [Wide Timeline] on Bottom */}
-          <div className="flex-1 min-w-0 h-full flex flex-col gap-3">
+          <div className="flex-1 min-w-0 h-full flex flex-col gap-2">
             {/* Top Row: Caption Inspector (Left) + Player (Right) */}
-            <div className="flex-1 min-h-0 flex gap-3 items-stretch">
+            <div className="flex-1 min-h-0 flex gap-2 items-stretch">
               <div className="w-[600px] xl:w-[680px] h-full shrink-0 flex flex-col">
                 <CaptionInspector
                   subtitles={subtitles}
@@ -428,12 +450,13 @@ export default function App() {
                   onDurationChange={setDuration}
                   videoSrc={videoSrc}
                   onUploadVideo={handleOpenUploadModal}
+                  style={subtitleStyle}
                 />
               </div>
             </div>
 
             {/* Bottom Row: Wide Timeline */}
-            <div className="h-72 shrink-0 flex flex-col">
+            <div className="h-60 shrink-0 flex flex-col">
               <Timeline
                 isPlaying={isPlaying}
                 currentTime={currentTime}
@@ -454,7 +477,11 @@ export default function App() {
           </div>
 
           {/* Right Column: Properties Panel */}
-          <PropertiesPanel />
+          <PropertiesPanel
+            style={subtitleStyle}
+            onStyleChange={handleStyleChange}
+            onApplyPreset={handleApplyPreset}
+          />
         </main>
       )}
 
@@ -470,7 +497,7 @@ export default function App() {
         onClose={handleCloseExportModal}
         videoMetadata={exportMetadata}
         subtitles={subtitles}
-        style={exportStyle}
+        style={subtitleStyle}
         aspectRatio={aspectRatio}
       />
     </div>
