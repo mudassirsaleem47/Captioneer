@@ -28,6 +28,8 @@ import {
 import { TextField } from "../ui/TextField";
 import { Tooltip, TooltipTrigger } from "../ui/Tooltip";
 
+const isUrduText = (txt) => /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(txt || "");
+
 export function CaptionInspector({
   subtitles = [],
   activeSubtitleId,
@@ -469,6 +471,11 @@ export function CaptionInspector({
                               if (e.key === "Escape") setEditingRowId(null);
                             }}
                             autoFocus
+                            style={{
+                              direction: isUrduText(editingText) ? 'rtl' : 'ltr',
+                              textAlign: isUrduText(editingText) ? 'right' : 'left',
+                              fontFamily: isUrduText(editingText) ? "'Noto Nastaliq Urdu', sans-serif" : undefined
+                            }}
                             className="flex-1"
                           />
                           <Button
@@ -483,6 +490,11 @@ export function CaptionInspector({
                         <div
                           onDoubleClick={(e) => handleStartEdit(cue, e)}
                           className="flex flex-wrap items-center gap-1 text-xs leading-normal"
+                          style={{
+                            direction: isUrduText(cue.text) ? 'rtl' : 'ltr',
+                            justifyContent: isUrduText(cue.text) ? 'flex-end' : 'flex-start',
+                            fontFamily: isUrduText(cue.text) ? "'Noto Nastaliq Urdu', sans-serif" : undefined
+                          }}
                         >
                           {wordsList.map((wObj, wIdx) => {
                             const wordText =

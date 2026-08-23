@@ -38,6 +38,12 @@ export const SubtitleOverlay = ({ activeCue, currentTime, style }) => {
     );
   }, [wordList, currentTime]);
 
+  // Dynamically detect Urdu script (RTL) to handle alignment and rendering order
+  const isUrdu = useMemo(() => {
+    const fullText = text || wordList.map((w) => w.word || w).join(' ');
+    return /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFF]/.test(fullText);
+  }, [text, wordList]);
+
   // Style properties
   const {
     fontFamily = 'Montserrat',
@@ -79,7 +85,7 @@ export const SubtitleOverlay = ({ activeCue, currentTime, style }) => {
       <div
         className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center max-w-[90%]"
         style={{
-          fontFamily,
+          fontFamily: isUrdu ? "'Noto Nastaliq Urdu', sans-serif" : fontFamily,
           fontSize: `${fontSize}px`,
           fontWeight: bold ? 800 : 500,
           fontStyle: italic ? 'italic' : 'normal',
@@ -87,6 +93,7 @@ export const SubtitleOverlay = ({ activeCue, currentTime, style }) => {
           backgroundColor: hasBox ? boxBackground : 'transparent',
           padding: hasBox ? `${boxPadding}px ${boxPadding * 1.5}px` : '0px',
           borderRadius: hasBox ? `${boxRadius}px` : '0px',
+          direction: isUrdu ? 'rtl' : 'ltr',
         }}
       >
         {wordList.map((item, idx) => {
